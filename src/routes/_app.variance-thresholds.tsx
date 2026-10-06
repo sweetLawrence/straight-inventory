@@ -8,6 +8,7 @@ import { DataTable, Column } from '@/components/DataTable';
 import { CreateThresholdModal } from '@/components/production/CreateThresholdModal';
 import { VarianceThreshold } from '@/lib/api/production';
 
+import { Can } from '@/components/Can';
 export const Route = createFileRoute('/_app/variance-thresholds')({
   component: ThresholdsPage,
 });
@@ -52,9 +53,11 @@ function ThresholdsPage() {
         title="Variance Thresholds"
         subtitle="How much yield variance triggers warnings or exceptions"
         actions={
+          <Can perm="production.authorize">
           <Button leftSection={<Plus size={16} />} onClick={openModal}>
             New Threshold
           </Button>
+          </Can>
         }
       />
       <DataTable

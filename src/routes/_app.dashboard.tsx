@@ -375,13 +375,15 @@ function DashboardPage() {
           }
           color="violet"
         />
-        <StatCard
-          icon={<Users size={16} />}
-          label="Users"
-          value={users.isLoading ? '…' : users.data?.meta.total ?? 0}
-          sublabel={auth.hasRole('md', 'admin') ? 'All users' : 'Property users'}
-          color="orange"
-        />
+        {auth.hasPermission('user.manage') && (
+          <StatCard
+            icon={<Users size={16} />}
+            label="Users"
+            value={users.isLoading ? '…' : users.data?.meta.total ?? 0}
+            sublabel={auth.hasRole('md', 'admin') ? 'All users' : 'Property users'}
+            color="orange"
+          />
+        )}
       </SimpleGrid>
 
       <Grid>

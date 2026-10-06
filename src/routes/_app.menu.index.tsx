@@ -19,6 +19,7 @@ import { CreateMenuItemModal } from '@/components/menu/CreateMenuItemModal'
 import { EditMenuItemModal } from '@/components/menu/EditMenuItemModal'
 import { MenuItem } from '@/lib/api/menu'
 import { formatCurrency } from '@/lib/utils/format'
+import { Can } from '@/components/Can'
 
 export const Route = createFileRoute('/_app/menu/')({
   component: MenuPage
@@ -143,6 +144,7 @@ function MenuPage () {
         subtitle='Items available for sale'
         actions={
           canManage ? (
+            <Can perm="menu.manage">
             <Button
               leftSection={<Plus size={16} />}
               onClick={openCreate}
@@ -150,6 +152,7 @@ function MenuPage () {
             >
               Create Menu Item
             </Button>
+            </Can>
           ) : undefined
         }
       />

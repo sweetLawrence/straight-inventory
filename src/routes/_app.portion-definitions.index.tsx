@@ -11,6 +11,7 @@ import { CreatePortionDefinitionModal } from '@/components/menu/CreatePortionDef
 import { EditPortionDefinitionModal } from '@/components/menu/EditPortionDefinitionModal'
 import { PortionDefinition } from '@/lib/api/menu'
 import { formatCurrency, formatNumber } from '@/lib/utils/format'
+import { Can } from '@/components/Can'
 
 export const Route = createFileRoute('/_app/portion-definitions/')({
   component: PortionDefinitionsPage
@@ -112,6 +113,7 @@ function PortionDefinitionsPage () {
         subtitle='Standard sizes and prices for portioned stock'
         actions={
           canManage ? (
+            <Can perm="menu.manage">
             <Button
               leftSection={<Plus size={16} />}
               onClick={openCreate}
@@ -119,6 +121,7 @@ function PortionDefinitionsPage () {
             >
               Create Portion
             </Button>
+            </Can>
           ) : undefined
         }
       />

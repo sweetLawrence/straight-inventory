@@ -11,6 +11,7 @@ import { BulkIssue } from '@/lib/api/stock';
 import { CreateBulkIssueModal } from '@/components/stock/CreateBulkIssueModal';
 import { formatDateTime, formatNumber } from '@/lib/utils/format';
 
+import { Can } from '@/components/Can';
 export const Route = createFileRoute('/_app/stock/bulk-issues')({
   component: BulkIssuesPage,
 });
@@ -65,9 +66,11 @@ function BulkIssuesPage() {
         subtitle="Daily issues to kitchen - bulk stock without portioning"
         actions={
           canCreate ? (
+            <Can perm="stock.bulk_issue">
             <Button leftSection={<Plus size={16} />} onClick={open}>
               New Bulk Issue
             </Button>
+            </Can>
           ) : undefined
         }
       />

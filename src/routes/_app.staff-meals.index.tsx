@@ -113,6 +113,7 @@ import { CreateStaffMealModal } from '@/components/staff-meals/CreateStaffMealMo
 import { BulkStaffMealModal } from '@/components/staff-meals/BulkStaffMealModal'
 import { StaffMeal } from '@/lib/api/operations'
 import { formatCurrency, formatDateTime } from '@/lib/utils/format'
+import { Can } from '@/components/Can'
 
 export const Route = createFileRoute('/_app/staff-meals/')({
   component: StaffMealsPage
@@ -190,6 +191,7 @@ function StaffMealsPage () {
                   Daily View
                 </Button>
               </Link>
+              <Can perm="staff_meal.authorize">
               <Button
                 variant='light'
                 leftSection={<Users size={16} />}
@@ -197,9 +199,12 @@ function StaffMealsPage () {
               >
                 Bulk Record
               </Button>
+              </Can>
+              <Can perm="staff_meal.authorize">
               <Button leftSection={<Plus size={16} />} onClick={openCreate}>
                 Record Meal
               </Button>
+              </Can>
             </Group>
           ) : undefined
         }

@@ -9,6 +9,7 @@ import { DataTable, Column } from '@/components/DataTable'
 import { StatBadge } from '@/components/StatBadge'
 import { MasterItemFormModal } from '@/components/menu/MasterItemFormModal'
 import { MasterItem } from '@/lib/api/item'
+import { Can } from '@/components/Can'
 
 export const Route = createFileRoute('/_app/menu/master-items')({
   component: MasterItemsPage
@@ -75,9 +76,11 @@ function MasterItemsPage () {
         title='Master Items'
         subtitle='The catalog of every ingredient, product, and menu item in the system'
         actions={
+          <Can perm="item.manage">
           <Button leftSection={<Plus size={16} />} onClick={handleAdd}>
             Add Item
           </Button>
+          </Can>
         }
       />
 

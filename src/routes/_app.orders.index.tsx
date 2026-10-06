@@ -337,8 +337,6 @@ function MobileOrderList ({
 }
 
 function OrderCard ({ order }: { order: Order }) {
-  const [date, ...timeParts] = formatDateTime(order.created_at).split(' ')
-  const time = timeParts.join(' ')
 
   return (
     <UnstyledButton
@@ -354,15 +352,12 @@ function OrderCard ({ order }: { order: Order }) {
       >
         {/* Row 1: ref + status */}
         <Group justify='space-between' align='center' mb='xs' wrap='nowrap'>
-          <Group gap={8} wrap='nowrap' style={{ minWidth: 0 }}>
-            <Text size='sm' fw={700} style={{ letterSpacing: '-0.01em' }}>
-              {order.order_ref}
-            </Text>
-            <Text size='xs' c='dimmed' ff='monospace'>
-              #{order.id.slice(0, 6)}
-            </Text>
-          </Group>
-          <StatBadge value={order.status} />
+          <Text size='sm' fw={700} truncate style={{ letterSpacing: '-0.01em', minWidth: 0 }}>
+            {order.order_ref}
+          </Text>
+          <Box style={{ flexShrink: 0 }}>
+            <StatBadge value={order.status} />
+          </Box>
         </Group>
 
         {/* Row 2: customer + table */}
@@ -392,7 +387,7 @@ function OrderCard ({ order }: { order: Order }) {
           <Group gap={6} wrap='nowrap'>
             <Clock size={12} color='var(--mantine-color-gray-6)' />
             <Text size='xs' c='dimmed'>
-              {date} · {time}
+              {formatDateTime(order.created_at)}
             </Text>
           </Group>
           <Group gap={6} wrap='nowrap'>

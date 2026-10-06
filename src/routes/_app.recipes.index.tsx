@@ -11,6 +11,7 @@ import { CreateRecipeModal } from '@/components/menu/CreateRecipeModal';
 import { EditRecipeModal } from '@/components/menu/EditRecipeModal';
 import { Recipe } from '@/lib/api/menu';
 import { formatNumber } from '@/lib/utils/format';
+import { Can } from '@/components/Can';
 
 export const Route = createFileRoute('/_app/recipes/')({
   component: RecipesPage,
@@ -72,9 +73,11 @@ function RecipesPage() {
         subtitle="Ingredients consumed per menu item"
         actions={
           canManage ? (
+            <Can perm="menu.manage">
             <Button leftSection={<Plus size={16} />} onClick={openCreate}>
               Add Recipe Line
             </Button>
+            </Can>
           ) : undefined
         }
       />

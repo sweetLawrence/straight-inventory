@@ -10,6 +10,7 @@ import { StatBadge } from '@/components/StatBadge';
 import { RunCheckModal } from '@/components/reconciliation/RunCheckModal';
 import { ReconciliationCheck } from '@/lib/api/admin';
 import { formatCurrency, formatDateTime } from '@/lib/utils/format';
+import { Can } from '@/components/Can';
 
 export const Route = createFileRoute('/_app/reconciliation/')({
   component: ReconciliationPage,
@@ -100,9 +101,11 @@ function ReconciliationPage() {
         title="Reconciliation Checks"
         subtitle="Three checks: customer bill, waiter collections, stock fulfilment"
         actions={
+          <Can perm="reconciliation.run">
           <Button leftSection={<Play size={16} />} onClick={openModal}>
             Run Check
           </Button>
+          </Can>
         }
       />
       <Group mb="md">

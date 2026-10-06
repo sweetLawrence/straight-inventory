@@ -691,7 +691,8 @@ import {
   ChevronRight,
   Layers,
   Wine,
-  CheckCircle2
+  CheckCircle2,
+  FileSpreadsheet
 } from 'lucide-react'
 import {
   Link,
@@ -701,12 +702,16 @@ import {
 } from '@tanstack/react-router'
 import { useAuth } from '@/lib/auth/useAuth'
 
+// roles: which jobs the entry is for (MD and admin see all of them).
+// perm:  hide unless the user has one of these permissions — use the code the
+//        page's API checks, so nobody is shown a page that answers 403.
 interface NavLeaf {
   type: 'leaf'
   label: string
   to: string
   icon?: ReactNode
   roles?: string[]
+  perm?: string[]
 }
 
 interface NavGroup {
@@ -714,6 +719,7 @@ interface NavGroup {
   label: string
   icon: ReactNode
   roles?: string[]
+  perm?: string[]
   children: NavLeaf[]
 }
 
@@ -779,7 +785,7 @@ const navSections: { title: string; items: NavEntry[] }[] = [
         label: 'Orders',
         to: '/orders',
         icon: <Receipt size={18} />,
-        roles: ['waiter', 'supervisor', 'manager', 'bar_attendant']
+        roles: ['waiter', 'supervisor', 'manager']
       },
       {
         type: 'leaf',
@@ -798,7 +804,8 @@ const navSections: { title: string; items: NavEntry[] }[] = [
           {
             type: 'leaf',
             label: 'Pending Verification',
-            to: '/payments/pending'
+            to: '/payments/pending',
+            perm: ['payment.verify']
           },
           { type: 'leaf', label: 'Cash Drops', to: '/cash-drops' },
           { type: 'leaf', label: 'Float', to: '/float' },
@@ -815,6 +822,7 @@ const navSections: { title: string; items: NavEntry[] }[] = [
         type: 'leaf',
         label: 'Dispatch Queue',
         to: '/store/queue',
+        perm: ['store.queue.view'],
         icon: <Package size={18} />,
         roles: ['store_manager', 'manager', 'md', 'admin']
       },
@@ -822,6 +830,7 @@ const navSections: { title: string; items: NavEntry[] }[] = [
         type: 'leaf',
         label: 'Issue Slips',
         to: '/store/slips',
+        perm: ['store.queue.view'],
         icon: <FileText size={18} />,
         roles: ['store_manager', 'manager', 'md', 'admin']
       }
@@ -835,7 +844,7 @@ const navSections: { title: string; items: NavEntry[] }[] = [
         type: 'group',
         label: 'Stock',
         icon: <Package size={18} />,
-        roles: ['store_manager', 'bar_attendant', 'supervisor', 'manager'],
+        roles: ['store_manager', 'supervisor', 'manager'],
         children: [
           { type: 'leaf', label: 'Batches', to: '/stock/batches' },
           {
@@ -853,6 +862,7 @@ const navSections: { title: string; items: NavEntry[] }[] = [
         type: 'leaf',
         label: 'Bar Approvals',
         to: '/bar-approvals',
+        perm: ['bar.order.approve'],
         icon: <CheckCircle2 size={18} />,
         roles: ['manager', 'admin']
       },
@@ -906,6 +916,12 @@ const navSections: { title: string; items: NavEntry[] }[] = [
         icon: <MenuIcon size={18} />,
         roles: ['manager', 'md', 'admin', 'supervisor', 'store_manager'],
         children: [
+          {
+            type: 'leaf',
+            label: 'New Product',
+            to: '/menu/new-product',
+            roles: ['manager', 'md', 'admin']
+          },
           { type: 'leaf', label: 'Master Items', to: '/menu/master-items' },
           { type: 'leaf', label: 'Menu Items', to: '/menu' },
           {
@@ -928,8 +944,16 @@ const navSections: { title: string; items: NavEntry[] }[] = [
         type: 'leaf',
         label: 'Users',
         to: '/users',
+        perm: ['user.manage'],
         icon: <Users size={18} />,
         roles: ['manager', 'md', 'admin']
+      },
+      {
+        type: 'leaf',
+        label: 'Bulk Import',
+        to: '/admin/bulk-import',
+        icon: <FileSpreadsheet size={18} />,
+        roles: ['md', 'admin']
       },
       {
         type: 'leaf',
@@ -969,9 +993,12 @@ export function AppShell ({ children }: { children?: ReactNode }) {
     )
   }
 
-  const canSee = (roles?: string[]) => {
-    if (!roles) return true
-    return roles.some(r => auth.hasRole(r))
+  const isGroupLevel = auth.hasRole('md', 'admin')
+  const canSee = (entry: { roles?: string[]; perm?: string[] }) => {
+    const roleOk =
+      !entry.roles || isGroupLevel || entry.roles.some(r => auth.hasRole(r))
+    const permOk = !entry.perm || entry.perm.some(p => auth.hasPermission(p))
+    return roleOk && permOk
   }
 
   const allLeafPaths = navSections.flatMap(section =>
@@ -1110,7 +1137,7 @@ export function AppShell ({ children }: { children?: ReactNode }) {
           <Stack gap={0} p='sm'>
             {navSections.map((section, sIdx) => {
               const visibleItems = section.items.filter(item =>
-                canSee(item.roles)
+                canSee(item)
               )
               if (visibleItems.length === 0) return null
 
@@ -1153,7 +1180,7 @@ export function AppShell ({ children }: { children?: ReactNode }) {
                       }
 
                       const childVisible = item.children.filter(c =>
-                        canSee(c.roles)
+                        canSee(c)
                       )
                       if (childVisible.length === 0) return null
 

@@ -12,6 +12,7 @@ import { Portion } from '@/lib/api/stock';
 import { formatCurrency, formatDateTime, formatNumber } from '@/lib/utils/format';
 import { useAuth } from '@/lib/auth/useAuth';
 
+import { Can } from '@/components/Can';
 export const Route = createFileRoute('/_app/stock/batches/$id')({
   component: BatchDetailPage,
 });
@@ -82,6 +83,7 @@ function BatchDetailPage() {
         subtitle={b.stock_item?.item?.name || 'Batch'}
         actions={
           !alreadyPortioned && canPortion ? (
+            <Can perm="stock.portion">
             <Button
               leftSection={<Scissors size={16} />}
               onClick={() =>
@@ -93,6 +95,7 @@ function BatchDetailPage() {
             >
               Portion this batch
             </Button>
+            </Can>
           ) : undefined
         }
       />

@@ -10,6 +10,7 @@ import { DataTable, Column } from '@/components/DataTable'
 import { StatBadge } from '@/components/StatBadge'
 import { StockItemFormModal } from '@/components/stock/StockItemFormModal'
 import { StockItem } from '@/lib/api/stock'
+import { Can } from '@/components/Can'
 
 export const Route = createFileRoute('/_app/stock/items')({
   component: StockItemsPage
@@ -99,9 +100,11 @@ function StockItemsPage () {
         subtitle='What this property stocks - the link between the catalog and what you receive'
         actions={
           canManage ? (
+            <Can perm="stock.item.manage">
             <Button leftSection={<Plus size={16} />} onClick={handleAdd}>
               Enable Item
             </Button>
+            </Can>
           ) : undefined
         }
       />

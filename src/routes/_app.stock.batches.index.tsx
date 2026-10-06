@@ -12,6 +12,7 @@ import { ReceiveBatchModal } from '@/components/stock/ReceiveBatchModal';
 import { Batch } from '@/lib/api/stock';
 import { formatCurrency, formatDateTime, formatNumber } from '@/lib/utils/format';
 
+import { Can } from '@/components/Can';
 export const Route = createFileRoute('/_app/stock/batches/')({   // ← trailing slash
   component: BatchesPage,
 });
@@ -79,9 +80,11 @@ function BatchesPage() {
         subtitle="Received stock, portioning status, and costs"
         actions={
           canReceive ? (
+            <Can perm="stock.receive">
             <Button leftSection={<Plus size={16} />} onClick={open}>
               Receive Batch
             </Button>
+            </Can>
           ) : undefined
         }
       />

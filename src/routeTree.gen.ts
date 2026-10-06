@@ -21,6 +21,7 @@ import { Route as AppStoreRouteImport } from './routes/_app.store'
 import { Route as AppVarianceThresholdsRouteImport } from './routes/_app.variance-thresholds'
 import { Route as AppAdjustmentsIndexRouteImport } from './routes/_app.adjustments.index'
 import { Route as AppAdjustmentsIdRouteImport } from './routes/_app.adjustments.$id'
+import { Route as AppAdminBulkImportRouteImport } from './routes/_app.admin.bulk-import'
 import { Route as AppAuditIndexRouteImport } from './routes/_app.audit.index'
 import { Route as AppAuditIdRouteImport } from './routes/_app.audit.$id'
 import { Route as AppBarIndexRouteImport } from './routes/_app.bar.index'
@@ -38,6 +39,7 @@ import { Route as AppExceptionsIndexRouteImport } from './routes/_app.exceptions
 import { Route as AppExceptionsIdRouteImport } from './routes/_app.exceptions.$id'
 import { Route as AppMenuIndexRouteImport } from './routes/_app.menu.index'
 import { Route as AppMenuMasterItemsRouteImport } from './routes/_app.menu.master-items'
+import { Route as AppMenuNewProductRouteImport } from './routes/_app.menu.new-product'
 import { Route as AppOrdersIndexRouteImport } from './routes/_app.orders.index'
 import { Route as AppOrdersIdRouteImport } from './routes/_app.orders.$id'
 import { Route as AppOrdersNewRouteImport } from './routes/_app.orders.new'
@@ -140,6 +142,11 @@ const AppAdjustmentsIdRoute = AppAdjustmentsIdRouteImport.update({
   path: '/adjustments/$id',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAdminBulkImportRoute = AppAdminBulkImportRouteImport.update({
+  id: '/admin/bulk-import',
+  path: '/admin/bulk-import',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAuditIndexRoute = AppAuditIndexRouteImport.update({
   id: '/audit/',
   path: '/audit/',
@@ -223,6 +230,11 @@ const AppMenuIndexRoute = AppMenuIndexRouteImport.update({
 const AppMenuMasterItemsRoute = AppMenuMasterItemsRouteImport.update({
   id: '/menu/master-items',
   path: '/menu/master-items',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMenuNewProductRoute = AppMenuNewProductRouteImport.update({
+  id: '/menu/new-product',
+  path: '/menu/new-product',
   getParentRoute: () => AppRoute,
 } as any)
 const AppOrdersIndexRoute = AppOrdersIndexRouteImport.update({
@@ -449,6 +461,7 @@ export interface FileRoutesByFullPath {
   '/store': typeof AppStoreRouteWithChildren
   '/variance-thresholds': typeof AppVarianceThresholdsRoute
   '/adjustments/$id': typeof AppAdjustmentsIdRoute
+  '/admin/bulk-import': typeof AppAdminBulkImportRoute
   '/audit/$id': typeof AppAuditIdRoute
   '/bar/handover': typeof AppBarHandoverRoute
   '/bar/orders': typeof AppBarOrdersRoute
@@ -459,6 +472,7 @@ export interface FileRoutesByFullPath {
   '/disputes/$id': typeof AppDisputesIdRoute
   '/exceptions/$id': typeof AppExceptionsIdRoute
   '/menu/master-items': typeof AppMenuMasterItemsRoute
+  '/menu/new-product': typeof AppMenuNewProductRoute
   '/orders/$id': typeof AppOrdersIdRoute
   '/orders/new': typeof AppOrdersNewRoute
   '/payments/$id': typeof AppPaymentsIdRoute
@@ -521,6 +535,7 @@ export interface FileRoutesByTo {
   '/store': typeof AppStoreRouteWithChildren
   '/variance-thresholds': typeof AppVarianceThresholdsRoute
   '/adjustments/$id': typeof AppAdjustmentsIdRoute
+  '/admin/bulk-import': typeof AppAdminBulkImportRoute
   '/audit/$id': typeof AppAuditIdRoute
   '/bar/handover': typeof AppBarHandoverRoute
   '/bar/orders': typeof AppBarOrdersRoute
@@ -531,6 +546,7 @@ export interface FileRoutesByTo {
   '/disputes/$id': typeof AppDisputesIdRoute
   '/exceptions/$id': typeof AppExceptionsIdRoute
   '/menu/master-items': typeof AppMenuMasterItemsRoute
+  '/menu/new-product': typeof AppMenuNewProductRoute
   '/orders/$id': typeof AppOrdersIdRoute
   '/orders/new': typeof AppOrdersNewRoute
   '/payments/$id': typeof AppPaymentsIdRoute
@@ -594,6 +610,7 @@ export interface FileRoutesById {
   '/_app/store': typeof AppStoreRouteWithChildren
   '/_app/variance-thresholds': typeof AppVarianceThresholdsRoute
   '/_app/adjustments/$id': typeof AppAdjustmentsIdRoute
+  '/_app/admin/bulk-import': typeof AppAdminBulkImportRoute
   '/_app/audit/$id': typeof AppAuditIdRoute
   '/_app/bar/handover': typeof AppBarHandoverRoute
   '/_app/bar/orders': typeof AppBarOrdersRoute
@@ -604,6 +621,7 @@ export interface FileRoutesById {
   '/_app/disputes/$id': typeof AppDisputesIdRoute
   '/_app/exceptions/$id': typeof AppExceptionsIdRoute
   '/_app/menu/master-items': typeof AppMenuMasterItemsRoute
+  '/_app/menu/new-product': typeof AppMenuNewProductRoute
   '/_app/orders/$id': typeof AppOrdersIdRoute
   '/_app/orders/new': typeof AppOrdersNewRoute
   '/_app/payments/$id': typeof AppPaymentsIdRoute
@@ -668,6 +686,7 @@ export interface FileRouteTypes {
     | '/store'
     | '/variance-thresholds'
     | '/adjustments/$id'
+    | '/admin/bulk-import'
     | '/audit/$id'
     | '/bar/handover'
     | '/bar/orders'
@@ -678,6 +697,7 @@ export interface FileRouteTypes {
     | '/disputes/$id'
     | '/exceptions/$id'
     | '/menu/master-items'
+    | '/menu/new-product'
     | '/orders/$id'
     | '/orders/new'
     | '/payments/$id'
@@ -740,6 +760,7 @@ export interface FileRouteTypes {
     | '/store'
     | '/variance-thresholds'
     | '/adjustments/$id'
+    | '/admin/bulk-import'
     | '/audit/$id'
     | '/bar/handover'
     | '/bar/orders'
@@ -750,6 +771,7 @@ export interface FileRouteTypes {
     | '/disputes/$id'
     | '/exceptions/$id'
     | '/menu/master-items'
+    | '/menu/new-product'
     | '/orders/$id'
     | '/orders/new'
     | '/payments/$id'
@@ -812,6 +834,7 @@ export interface FileRouteTypes {
     | '/_app/store'
     | '/_app/variance-thresholds'
     | '/_app/adjustments/$id'
+    | '/_app/admin/bulk-import'
     | '/_app/audit/$id'
     | '/_app/bar/handover'
     | '/_app/bar/orders'
@@ -822,6 +845,7 @@ export interface FileRouteTypes {
     | '/_app/disputes/$id'
     | '/_app/exceptions/$id'
     | '/_app/menu/master-items'
+    | '/_app/menu/new-product'
     | '/_app/orders/$id'
     | '/_app/orders/new'
     | '/_app/payments/$id'
@@ -968,6 +992,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdjustmentsIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/admin/bulk-import': {
+      id: '/_app/admin/bulk-import'
+      path: '/admin/bulk-import'
+      fullPath: '/admin/bulk-import'
+      preLoaderRoute: typeof AppAdminBulkImportRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/audit/': {
       id: '/_app/audit/'
       path: '/audit'
@@ -1085,6 +1116,13 @@ declare module '@tanstack/react-router' {
       path: '/menu/master-items'
       fullPath: '/menu/master-items'
       preLoaderRoute: typeof AppMenuMasterItemsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/menu/new-product': {
+      id: '/_app/menu/new-product'
+      path: '/menu/new-product'
+      fullPath: '/menu/new-product'
+      preLoaderRoute: typeof AppMenuNewProductRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/orders/': {
@@ -1447,6 +1485,7 @@ interface AppRouteChildren {
   AppStoreRoute: typeof AppStoreRouteWithChildren
   AppVarianceThresholdsRoute: typeof AppVarianceThresholdsRoute
   AppAdjustmentsIdRoute: typeof AppAdjustmentsIdRoute
+  AppAdminBulkImportRoute: typeof AppAdminBulkImportRoute
   AppAuditIdRoute: typeof AppAuditIdRoute
   AppBarHandoverRoute: typeof AppBarHandoverRoute
   AppBarOrdersRoute: typeof AppBarOrdersRoute
@@ -1457,6 +1496,7 @@ interface AppRouteChildren {
   AppDisputesIdRoute: typeof AppDisputesIdRoute
   AppExceptionsIdRoute: typeof AppExceptionsIdRoute
   AppMenuMasterItemsRoute: typeof AppMenuMasterItemsRoute
+  AppMenuNewProductRoute: typeof AppMenuNewProductRoute
   AppOrdersIdRoute: typeof AppOrdersIdRoute
   AppOrdersNewRoute: typeof AppOrdersNewRoute
   AppPaymentsIdRoute: typeof AppPaymentsIdRoute
@@ -1504,6 +1544,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppStoreRoute: AppStoreRouteWithChildren,
   AppVarianceThresholdsRoute: AppVarianceThresholdsRoute,
   AppAdjustmentsIdRoute: AppAdjustmentsIdRoute,
+  AppAdminBulkImportRoute: AppAdminBulkImportRoute,
   AppAuditIdRoute: AppAuditIdRoute,
   AppBarHandoverRoute: AppBarHandoverRoute,
   AppBarOrdersRoute: AppBarOrdersRoute,
@@ -1514,6 +1555,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppDisputesIdRoute: AppDisputesIdRoute,
   AppExceptionsIdRoute: AppExceptionsIdRoute,
   AppMenuMasterItemsRoute: AppMenuMasterItemsRoute,
+  AppMenuNewProductRoute: AppMenuNewProductRoute,
   AppOrdersIdRoute: AppOrdersIdRoute,
   AppOrdersNewRoute: AppOrdersNewRoute,
   AppPaymentsIdRoute: AppPaymentsIdRoute,

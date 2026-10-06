@@ -111,94 +111,69 @@
 //   )
 // }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-import { createFileRoute } from '@tanstack/react-router';
-import { useEffect } from 'react';
-import { Button, Group, Loader } from '@mantine/core';
-import { Printer } from 'lucide-react';
-import { useSlip } from '@/hooks/useStore';
-import { formatDateTime } from '@/lib/utils/format';
+import { createFileRoute } from '@tanstack/react-router'
+import { useEffect } from 'react'
+import { Button, Group, Loader } from '@mantine/core'
+import { Printer } from 'lucide-react'
+import { useSlip } from '@/hooks/useStore'
+import { formatDateTime } from '@/lib/utils/format'
 
 export const Route = createFileRoute('/_print/slip/$id')({
-  component: SlipPrintPage,
-});
+  component: SlipPrintPage
+})
 
-function SlipPrintPage() {
-  const { id } = Route.useParams();
-  const query = useSlip(id);
+function SlipPrintPage () {
+  const { id } = Route.useParams()
+  const query = useSlip(id)
 
   useEffect(() => {
     if (query.data) {
-      const t = setTimeout(() => window.print(), 400);
-      return () => clearTimeout(t);
+      const t = setTimeout(() => window.print(), 400)
+      return () => clearTimeout(t)
     }
-  }, [query.data]);
+  }, [query.data])
 
   if (query.isLoading) {
     return (
-      <Group justify="center" mt="xl">
+      <Group justify='center' mt='xl'>
         <Loader />
       </Group>
-    );
+    )
   }
-  if (query.error || !query.data) return <div>Slip not found</div>;
+  if (query.error || !query.data) return <div>Slip not found</div>
 
-  const slip = query.data;
-  const lines = slip.issue_slip_lines ?? [];
-  const property = slip.property;
+  const slip = query.data
+  const lines = slip.issue_slip_lines ?? []
+  const property = slip.property
 
   // Group lines by menu item (order_line.menu_item.id)
   const grouped = lines.reduce((acc, line) => {
-    const menuItemId = line.order_line?.menu_item?.id || 'unknown';
+    const menuItemId = line.order_line?.menu_item?.id || 'unknown'
     const menuItemName =
-      line.order_line?.menu_item?.display_name || 'Unknown item';
-    const menuQty = parseFloat(line.order_line?.quantity || '0');
+      line.order_line?.menu_item?.display_name || 'Unknown item'
+    const menuQty = parseFloat(line.order_line?.quantity || '0')
 
     if (!acc[menuItemId]) {
       acc[menuItemId] = {
         menu_item_name: menuItemName,
         menu_qty: menuQty,
-        lines: [],
-      };
+        lines: []
+      }
     }
-    acc[menuItemId].lines.push(line);
-    return acc;
-  }, {} as Record<string, { menu_item_name: string; menu_qty: number; lines: typeof lines }>);
+    acc[menuItemId].lines.push(line)
+    return acc
+  }, {} as Record<string, { menu_item_name: string; menu_qty: number; lines: typeof lines }>)
 
-  const groupedList = Object.values(grouped);
+  const groupedList = Object.values(grouped)
 
   return (
     <>
       {/* Screen-only toolbar */}
       <Group
-        justify="space-between"
-        p="md"
+        justify='space-between'
+        p='md'
         style={{ borderBottom: '1px solid #eaeaea' }}
-        className="no-print"
+        className='no-print'
       >
         <span>Slip {slip.slip_ref}</span>
         <Button
@@ -210,89 +185,89 @@ function SlipPrintPage() {
       </Group>
 
       {/* The slip */}
-      <div className="slip">
+      <div className='slip'>
         {/* ── Property header ── */}
-        <div className="slip-header">
+        <div className='slip-header'>
           {property?.logo_url && (
             <img
               src={property.logo_url}
               alt={property.name}
-              className="slip-logo"
+              className='slip-logo'
             />
           )}
-          <div className="slip-property-name">
+          <div className='slip-property-name'>
             {(property?.name || 'PROPERTY').toUpperCase()}
           </div>
           {property?.address && (
-            <div className="slip-property-sub">{property.address}</div>
+            <div className='slip-property-sub'>{property.address}</div>
           )}
           {property?.phone && (
-            <div className="slip-property-sub">Tel: {property.phone}</div>
+            <div className='slip-property-sub'>Tel: {property.phone}</div>
           )}
           {property?.kra_pin && (
-            <div className="slip-property-sub">PIN: {property.kra_pin}</div>
+            <div className='slip-property-sub'>PIN: {property.kra_pin}</div>
           )}
-          <div className="slip-title">KITCHEN ISSUE SLIP</div>
-          <div className="slip-ref">{slip.slip_ref}</div>
+          <div className='slip-title'>KITCHEN ISSUE SLIP</div>
+          <div className='slip-ref'>{slip.slip_ref}</div>
         </div>
 
         {/* ── Meta block ── */}
-        <div className="slip-meta">
-          <div className="slip-meta-row">
-            <span className="slip-meta-label">Table:</span>
-            <span className="slip-meta-value">
+        <div className='slip-meta'>
+          <div className='slip-meta-row'>
+            <span className='slip-meta-label'>Table:</span>
+            <span className='slip-meta-value'>
               {slip.order?.table_number || '-'}
             </span>
           </div>
-          <div className="slip-meta-row">
-            <span className="slip-meta-label">Order:</span>
-            <span className="slip-meta-value">
+          <div className='slip-meta-row'>
+            <span className='slip-meta-label'>Order:</span>
+            <span className='slip-meta-value'>
               {slip.order?.order_ref || '-'}
             </span>
           </div>
-          <div className="slip-meta-row">
-            <span className="slip-meta-label">Customer:</span>
-            <span className="slip-meta-value">
+          <div className='slip-meta-row'>
+            <span className='slip-meta-label'>Customer:</span>
+            <span className='slip-meta-value'>
               {slip.order?.customer_code || '-'}
             </span>
           </div>
-          <div className="slip-meta-row">
-            <span className="slip-meta-label">Waiter:</span>
-            <span className="slip-meta-value">
+          <div className='slip-meta-row'>
+            <span className='slip-meta-label'>Waiter:</span>
+            <span className='slip-meta-value'>
               {slip.order?.waiter?.full_name || '-'}
             </span>
           </div>
-          <div className="slip-meta-row">
-            <span className="slip-meta-label">Time:</span>
-            <span className="slip-meta-value">
+          <div className='slip-meta-row'>
+            <span className='slip-meta-label'>Time:</span>
+            <span className='slip-meta-value'>
               {formatDateTime(slip.printed_at)}
             </span>
           </div>
         </div>
 
         {/* ── Line items, grouped by menu item ── */}
-        <div className="slip-lines">
+        <div className='slip-lines'>
           {groupedList.map((group, idx) => (
-            <div key={idx} className="slip-group">
-              <div className="slip-group-header">
+            <div key={idx} className='slip-group'>
+              <div className='slip-group-header'>
                 {group.menu_item_name}
                 {group.menu_qty > 1 && (
-                  <span className="slip-group-qty"> × {group.menu_qty}</span>
+                  <span className='slip-group-qty'> × {group.menu_qty}</span>
                 )}
               </div>
-              <table className="slip-group-lines">
+              <table className='slip-group-lines'>
                 <tbody>
-                  {group.lines.map((l) => (
+                  {group.lines.map(l => (
                     <tr key={l.id}>
-                      <td className="slip-qty">
+                      <td className='slip-qty'>
                         {parseFloat(l.quantity).toFixed(
                           Number.isInteger(parseFloat(l.quantity)) ? 0 : 2
                         )}
                       </td>
-                      <td className="slip-item">
+                      <td className='slip-item'>
                         {l.stock_item?.item?.name || '-'}
                       </td>
-                      <td className="slip-unit">{l.unit?.code || ''}</td>
+                      <td className='slip-unit'>{l.unit?.code || ''}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -302,28 +277,28 @@ function SlipPrintPage() {
         </div>
 
         {/* ── Footer ── */}
-        <div className="slip-footer">
-          <div className="slip-footer-line">
+        <div className='slip-footer'>
+          <div className='slip-footer-line'>
             Printed by: {slip.printed_by_user?.full_name || '-'}
           </div>
           {slip.reprint_count > 0 && (
-            <div className="slip-footer-line">
+            <div className='slip-footer-line'>
               *** REPRINT #{slip.reprint_count} ***
             </div>
           )}
 
-          <div className="slip-signature">
-            <div className="slip-signature-line">
+          <div className='slip-signature'>
+            <div className='slip-signature-line'>
               Received by: ______________________
             </div>
-            <div className="slip-signature-line">
+            <div className='slip-signature-line'>
               Time: ______________________
             </div>
           </div>
         </div>
 
-        <div className="slip-end">— END OF SLIP —</div>
+        <div className='slip-end'>- END OF SLIP -</div>
       </div>
     </>
-  );
+  )
 }
