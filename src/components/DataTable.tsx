@@ -118,6 +118,7 @@ import {
 import { AlertTriangle, RotateCw } from 'lucide-react'
 import { ReactNode } from 'react'
 import { EmptyState } from './EmptyState'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 export interface Column<T> {
   key: string
@@ -140,6 +141,8 @@ interface DataTableProps<T> {
   onPageChange?: (page: number) => void
   /** Shows a Try again button on errors */
   onRetry?: () => void
+  /** Phones: show each row as a card ('cards', default) or keep the scrolling table */
+  mobile?: 'cards' | 'table'
 }
 
 export function DataTable<T> ({
@@ -153,13 +156,86 @@ export function DataTable<T> ({
   emptyDescription,
   meta,
   onPageChange,
-  onRetry
+  onRetry,
+  mobile = 'cards'
 }: DataTableProps<T>) {
+  const isMobile = useIsMobile()
   const showPagination = meta && meta.pages > 1 && onPageChange
   const isEmpty = !loading && !error && (!data || data.length === 0)
+  const asCards = isMobile && mobile === 'cards'
+
+  const errorBlock = (
+    <Center py='xl'>
+      <Stack align='center' gap={6} maw={420} px='md'>
+        <ThemeIcon size={44} radius='xl' variant='light' color='red'>
+          <AlertTriangle size={22} />
+        </ThemeIcon>
+        <Text fw={600}>Couldn't load this list</Text>
+        <Text size='sm' c='dimmed' ta='center'>
+          {error}
+        </Text>
+        {onRetry && (
+          <Button size='xs' variant='light' leftSection={<RotateCw size={14} />} onClick={onRetry} mt={4}>
+            Try again
+          </Button>
+        )}
+      </Stack>
+    </Center>
+  )
+
+  // Phones: one card per row. First column is the title, the rest are label / value pairs.
+  const [first, ...rest] = columns
+  const cards = (
+    <Stack gap='xs'>
+      {loading &&
+        Array.from({ length: 4 }).map((_, i) => (
+          <Paper key={`skeleton-${i}`} withBorder radius='md' p='md'>
+            <Box style={{ height: 12, width: '60%', borderRadius: 4, background: '#F1F3F5' }} />
+            <Box mt={10} style={{ height: 10, width: '85%', borderRadius: 4, background: '#F1F3F5' }} />
+          </Paper>
+        ))}
+      {!loading &&
+        !error &&
+        data.map(row => (
+          <Paper
+            key={rowKey(row)}
+            withBorder
+            radius='md'
+            p='sm'
+            onClick={onRowClick ? () => onRowClick(row) : undefined}
+            style={{ cursor: onRowClick ? 'pointer' : undefined }}
+          >
+            {first && (
+              <Box mb={rest.length ? 6 : 0} style={{ fontWeight: 600, fontSize: 14 }}>
+                {first.render(row)}
+              </Box>
+            )}
+            <Stack gap={4}>
+              {rest.map(col => (
+                <Group key={col.key} justify='space-between' wrap='nowrap' gap='md' align='center'>
+                  <Text size='xs' c='dimmed' style={{ flexShrink: 0 }}>
+                    {col.header}
+                  </Text>
+                  <Box style={{ fontSize: 13, textAlign: 'right', minWidth: 0, overflowWrap: 'anywhere' }}>
+                    {col.render(row)}
+                  </Box>
+                </Group>
+              ))}
+            </Stack>
+          </Paper>
+        ))}
+      {isEmpty && (
+        <Center py='xl'>
+          <EmptyState title={emptyTitle} description={emptyDescription} />
+        </Center>
+      )}
+      {error && !loading && errorBlock}
+    </Stack>
+  )
 
   return (
     <Stack gap={0}>
+      {asCards ? cards : (
       <Box style={{ overflowX: 'auto' }}>
         <Table
           horizontalSpacing='md'
@@ -269,35 +345,22 @@ export function DataTable<T> ({
             {error && !loading && (
               <Table.Tr>
                 <Table.Td colSpan={columns.length} style={{ padding: 0 }}>
-                  <Center py='xl'>
-                    <Stack align='center' gap={6} maw={420} px='md'>
-                      <ThemeIcon size={44} radius='xl' variant='light' color='red'>
-                        <AlertTriangle size={22} />
-                      </ThemeIcon>
-                      <Text fw={600}>Couldn't load this list</Text>
-                      <Text size='sm' c='dimmed' ta='center'>
-                        {error}
-                      </Text>
-                      {onRetry && (
-                        <Button size='xs' variant='light' leftSection={<RotateCw size={14} />} onClick={onRetry} mt={4}>
-                          Try again
-                        </Button>
-                      )}
-                    </Stack>
-                  </Center>
+                  {errorBlock}
                 </Table.Td>
               </Table.Tr>
             )}
           </Table.Tbody>
         </Table>
       </Box>
+      )}
 
       {showPagination && (
         <Group
-          justify='space-between'
-          px='lg'
+          justify={asCards ? 'center' : 'space-between'}
+          px={asCards ? 0 : 'lg'}
           py='md'
-          style={{
+          gap='xs'
+          style={asCards ? undefined : {
             borderTop: '1px solid var(--mantine-color-gray-2)',
             background: 'var(--mantine-color-gray-0)'
           }}
@@ -319,7 +382,8 @@ export function DataTable<T> ({
             total={meta.pages}
             size='sm'
             radius='md'
-            withEdges
+            withEdges={!asCards}
+            siblings={asCards ? 0 : 1}
           />
         </Group>
       )}

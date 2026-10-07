@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import {
   Badge,
   Box,
@@ -6,6 +6,7 @@ import {
   Card,
   Divider,
   Group,
+  Select,
   Stack,
   Text,
   UnstyledButton
@@ -26,6 +27,8 @@ import { PageHeader } from '@/components/PageHeader'
 import { DataTable, Column } from '@/components/DataTable'
 import { StatBadge } from '@/components/StatBadge'
 import { Payment } from '@/lib/api/payments'
+import { getErrorMessage } from '@/lib/api/client'
+import { ListToolbar, emptyToolbar, toolbarParams } from '@/components/ListToolbar'
 import { formatCurrency, formatDateTime } from '@/lib/utils/format'
 
 export const Route = createFileRoute('/_app/payments/')({
@@ -62,9 +65,33 @@ function paymentMethods (r: Payment): string[] {
 
 /* ------------------------------------------------------------------ */
 
+const VERIFY_OPTIONS = [
+  { value: 'pending', label: 'Awaiting verification' },
+  { value: 'verified', label: 'Verified' },
+  { value: 'failed', label: 'Failed' },
+  { value: 'unverified', label: 'Unverified' }
+]
+const METHOD_OPTIONS = [
+  { value: 'cash', label: 'Cash' },
+  { value: 'mpesa', label: 'M-Pesa' },
+  { value: 'card', label: 'Card' },
+  { value: 'other', label: 'Other' }
+]
+
 function PaymentsPage () {
+  const navigate = useNavigate()
   const [page, setPage] = useState(1)
-  const query = usePayments({ page, limit: 20 })
+  const [filters, setFilters] = useState(emptyToolbar())
+  const [method, setMethod] = useState<string | null>(null)
+  const { status, ...rest } = toolbarParams(filters)
+  const query = usePayments({
+    page,
+    limit: 20,
+    ...rest,
+    verification_status: (status as 'pending' | 'verified' | 'failed' | 'unverified' | undefined) || undefined,
+    method: (method as 'cash' | 'mpesa' | 'card' | 'other' | null) || undefined
+  })
+  const error = query.error ? getErrorMessage(query.error) : null
 
   const columns: Column<Payment>[] = [
     {
@@ -183,14 +210,41 @@ function PaymentsPage () {
 
   return (
     <>
-      <PageHeader title='Payments' subtitle='All payments recorded' />
+      <PageHeader
+        title='Payments'
+        subtitle={query.data?.meta ? `${query.data.meta.total} payment${query.data.meta.total === 1 ? '' : 's'}` : 'All payments recorded'}
+      />
+
+      <ListToolbar
+        value={filters}
+        onChange={v => {
+          setFilters(v)
+          setPage(1)
+        }}
+        placeholder='Search PAY ref, bill, table or M-Pesa/card ref'
+        statusOptions={VERIFY_OPTIONS}
+        statusLabel='Any verification'
+      >
+        <Select
+          placeholder='All methods'
+          data={METHOD_OPTIONS}
+          value={method}
+          onChange={m => {
+            setMethod(m)
+            setPage(1)
+          }}
+          clearable
+          w={150}
+          aria-label='Method'
+        />
+      </ListToolbar>
 
       {/* Mobile + tablet: card list. Desktop: table. */}
       <Box hiddenFrom='md'>
         <MobilePaymentList
           payments={payments}
           loading={query.isLoading}
-          error={query.error ? 'Failed to load payments' : null}
+          error={error}
           meta={meta}
           onPageChange={setPage}
         />
@@ -201,8 +255,10 @@ function PaymentsPage () {
           data={payments}
           columns={columns}
           loading={query.isLoading}
-          error={query.error ? 'Failed to load payments' : null}
+          error={error}
+          onRetry={() => query.refetch()}
           rowKey={r => r.id}
+          onRowClick={r => navigate({ to: '/payments/$id', params: { id: r.id } })}
           meta={meta}
           onPageChange={setPage}
           emptyTitle='No payments'
@@ -349,8 +405,6 @@ function MobilePaymentList ({
 }
 
 function PaymentCard ({ payment }: { payment: Payment }) {
-  const [date, ...timeParts] = formatDateTime(payment.created_at).split(' ')
-  const time = timeParts.join(' ')
   const methods = paymentMethods(payment)
 
   return (
@@ -426,7 +480,7 @@ function PaymentCard ({ payment }: { payment: Payment }) {
           <Group gap={6} wrap='nowrap'>
             <Clock size={12} color='var(--mantine-color-gray-6)' />
             <Text size='xs' c='dimmed'>
-              {date} · {time}
+              {formatDateTime(payment.created_at)}
             </Text>
           </Group>
           <Group gap={6} wrap='nowrap'>

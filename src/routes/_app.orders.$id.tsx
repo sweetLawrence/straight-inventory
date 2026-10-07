@@ -35,7 +35,7 @@ import { LoadingState } from '@/components/LoadingState'
 import { EmptyState } from '@/components/EmptyState'
 import { StatBadge } from '@/components/StatBadge'
 import { AddLineModal } from '@/components/orders/AddLineModal'
-import { formatCurrency, formatDateTime } from '@/lib/utils/format'
+import { formatCurrency, formatDateTime, formatQty } from '@/lib/utils/format'
 import { notifications } from '@mantine/notifications'
 import { getErrorMessage } from '@/lib/api/client'
 import { useAuth } from '@/lib/auth/useAuth'
@@ -84,7 +84,7 @@ function OrderDetailPage () {
   }
 
   return (
-    <Box pb={{ base: 80, md: 0 }}>
+    <Box pb={{ base: canBill && !o.bill ? 96 : 16, sm: 0 }}>
       {/* ---------- Back link ---------- */}
       <Button
         variant='subtle'
@@ -134,7 +134,7 @@ function OrderDetailPage () {
           </Group>
         }
         actions={
-          <Group>
+          <Group visibleFrom='sm'>
             <StatBadge value={o.outlet} />
             <StatBadge value={o.status} />
             {o.approval_status && o.approval_status !== 'approved' && (
@@ -162,9 +162,13 @@ function OrderDetailPage () {
         }
       />
 
-      {/* Status on mobile (above the fold, since header actions are hidden) */}
-      <Group mb='md' hiddenFrom='sm'>
+      {/* Status on mobile (header actions are desktop only) */}
+      <Group mb='md' gap='xs' hiddenFrom='sm'>
+        <StatBadge value={o.outlet} />
         <StatBadge value={o.status} />
+        {o.approval_status && o.approval_status !== 'approved' && (
+          <StatBadge value={o.approval_status} />
+        )}
         {o.bill && (
           <Button
             component={Link}
@@ -280,7 +284,8 @@ function OrderDetailPage () {
           hiddenFrom='sm'
           style={{
             position: 'fixed',
-            bottom: 0,
+            // sit above the phone tab bar
+            bottom: 'var(--bottom-nav-height, 0px)',
             left: 0,
             right: 0,
             zIndex: 100,
@@ -325,7 +330,7 @@ function OrderLineCard ({ line }: { line: OrderLine }) {
     <Card withBorder radius='md' p='sm'>
       <Group justify='space-between' align='flex-start' wrap='nowrap' mb={6}>
         <Box style={{ minWidth: 0, flex: 1 }}>
-          <Text fw={600} size='sm' lineClamp={1}>
+          <Text fw={600} size='sm' lineClamp={2}>
             {line.menu_item?.display_name || '-'}
           </Text>
           <Group gap={6} mt={4} wrap='nowrap'>
@@ -360,7 +365,7 @@ function OrderLineCard ({ line }: { line: OrderLine }) {
         <Text size='xs' c='dimmed'>
           Qty{' '}
           <Text component='span' fw={600} c='dark'>
-            {line.quantity}
+            {formatQty(line.quantity)}
           </Text>
         </Text>
         <Text size='xs' c='dimmed'>
@@ -419,7 +424,7 @@ function OrderLinesTable ({ lines }: { lines: OrderLine[] }) {
             </Table.Td>
             <Table.Td style={{ textAlign: 'right' }}>
               <Text size='sm' style={{ fontVariantNumeric: 'tabular-nums' }}>
-                {line.quantity}
+                {formatQty(line.quantity)}
               </Text>
             </Table.Td>
             <Table.Td style={{ textAlign: 'right' }}>

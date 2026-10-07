@@ -16,6 +16,7 @@ import { DatePickerInput } from '@mantine/dates'
 import dayjs from 'dayjs'
 import { Search } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
+import { StatusDot } from '@/components/StatusDot'
 import {
   BAR,
   DrinkCard,
@@ -245,10 +246,13 @@ function Stat ({
   color: string
 }) {
   return (
-    <Card withBorder radius='md' p='md' style={{ borderTop: `3px solid ${color}` }}>
-      <Text size='xs' c='dimmed' fw={600} tt='uppercase'>
-        {label}
-      </Text>
+    <Card withBorder radius='md' p='md'>
+      <Group gap={6} wrap='nowrap'>
+        <StatusDot color={color} />
+        <Text size='xs' c='dimmed' fw={600} tt='uppercase' truncate>
+          {label}
+        </Text>
+      </Group>
       <Text fw={800} fz={{ base: 20, sm: 24 }} style={{ color: BAR.navy, whiteSpace: 'nowrap' }}>
         {value}
       </Text>

@@ -204,36 +204,29 @@ function CashDropDetailPage() {
         {/* Mobile view */}
         <Box hiddenFrom="sm">
           {d.cash_drop_lines?.length ? (
-            <Stack gap="sm">
-              {d.cash_drop_lines.map((l) => (
-                <Card key={l.id} withBorder padding="sm" radius="md">
-                  <Stack gap={4}>
-                    <Group justify="space-between" wrap="nowrap">
-                      <Text size="xs" c="dimmed">
-                        Bill
+            <Stack gap={0}>
+              {d.cash_drop_lines.map((l, i) => (
+                <Group
+                  key={l.id}
+                  justify="space-between"
+                  wrap="nowrap"
+                  py={8}
+                  style={{ borderTop: i ? '1px solid #F1F3F5' : undefined }}
+                >
+                  <Box style={{ minWidth: 0 }}>
+                    <Text size="sm" fw={500} truncate>
+                      {l.bill?.bill_ref || '-'}
+                    </Text>
+                    {l.bill?.customer_code && (
+                      <Text size="xs" c="dimmed" truncate>
+                        {l.bill.customer_code}
                       </Text>
-                      <Text size="sm" fw={500} ta="right">
-                        {l.bill?.bill_ref || '-'}
-                      </Text>
-                    </Group>
-                    <Group justify="space-between" wrap="nowrap">
-                      <Text size="xs" c="dimmed">
-                        Payment Line
-                      </Text>
-                      <Text size="xs" c="dimmed" ta="right">
-                        {l.payment_line_id}
-                      </Text>
-                    </Group>
-                    <Group justify="space-between" wrap="nowrap">
-                      <Text size="xs" c="dimmed">
-                        Amount
-                      </Text>
-                      <Text size="sm" fw={600}>
-                        {formatCurrency(l.amount)}
-                      </Text>
-                    </Group>
-                  </Stack>
-                </Card>
+                    )}
+                  </Box>
+                  <Text size="sm" fw={600} style={{ whiteSpace: 'nowrap' }}>
+                    {formatCurrency(l.amount)}
+                  </Text>
+                </Group>
               ))}
             </Stack>
           ) : (
@@ -249,7 +242,7 @@ function CashDropDetailPage() {
             <Table.Thead>
               <Table.Tr>
                 <Table.Th>Bill</Table.Th>
-                <Table.Th>Payment Line</Table.Th>
+                <Table.Th>Customer</Table.Th>
                 <Table.Th style={{ textAlign: 'right' }}>Amount</Table.Th>
               </Table.Tr>
             </Table.Thead>
@@ -259,7 +252,7 @@ function CashDropDetailPage() {
                   <Table.Td>{l.bill?.bill_ref || '-'}</Table.Td>
                   <Table.Td>
                     <Text size="sm" c="dimmed">
-                      {l.payment_line_id}
+                      {l.bill?.customer_code || '-'}
                     </Text>
                   </Table.Td>
                   <Table.Td style={{ textAlign: 'right' }}>

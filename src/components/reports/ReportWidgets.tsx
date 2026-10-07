@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { Box, Card, Group, Stack, Table, Text, ThemeIcon, Tooltip } from '@mantine/core';
 import { Link } from '@tanstack/react-router';
+import { StatusDot } from '@/components/StatusDot';
 
 // Shared palette for the reports pages
 export const RC = {
@@ -36,12 +37,17 @@ interface KpiProps {
 
 export function Kpi({ label, value, hint, icon, color = RC.navy }: KpiProps) {
   return (
-    <Card withBorder radius="md" p="md" style={{ borderTop: `3px solid ${color}` }}>
+    <Card withBorder radius="md" p="md">
       <Group justify="space-between" align="flex-start" wrap="nowrap" gap="xs">
         <Stack gap={2} style={{ minWidth: 0 }}>
-          <Text size="xs" c="dimmed" tt="uppercase" fw={600} lts={0.3}>
-            {label}
-          </Text>
+          <Group gap={6} wrap="nowrap" align="flex-start">
+            <Box mt={5} style={{ display: 'flex' }}>
+              <StatusDot color={color} />
+            </Box>
+            <Text size="xs" c="dimmed" tt="uppercase" fw={600} lts={0.3}>
+              {label}
+            </Text>
+          </Group>
           <Text fw={700} fz={{ base: 17, sm: 20 }} style={{ color: RC.navy, lineHeight: 1.25, whiteSpace: 'nowrap' }}>
             {value}
           </Text>
@@ -52,7 +58,7 @@ export function Kpi({ label, value, hint, icon, color = RC.navy }: KpiProps) {
           )}
         </Stack>
         {icon && (
-          <ThemeIcon visibleFrom="sm" variant="light" radius="md" size={36} style={{ color, backgroundColor: `${color}1A` }}>
+          <ThemeIcon visibleFrom="xl" variant="light" radius="md" size={32} style={{ color, backgroundColor: `${color}1A` }}>
             {icon}
           </ThemeIcon>
         )}
@@ -281,15 +287,18 @@ export function AttentionTile({
       radius="md"
       p="sm"
       style={{
-        borderLeft: `4px solid ${active ? color : RC.track}`,
-        background: active ? `${color}0D` : undefined,
         cursor: to ? 'pointer' : undefined,
         height: '100%',
       }}
     >
-      <Text size="xs" c="dimmed" fw={600}>
-        {label}
-      </Text>
+      <Group gap={6} wrap="nowrap" align="flex-start">
+        <Box mt={5} style={{ display: 'flex' }}>
+          <StatusDot color={active ? color : '#CED4DA'} />
+        </Box>
+        <Text size="xs" c="dimmed" fw={600}>
+          {label}
+        </Text>
+      </Group>
       <Group gap={6} align="baseline">
         <Text fw={700} fz="lg" style={{ color: active ? color : RC.muted }}>
           {count}

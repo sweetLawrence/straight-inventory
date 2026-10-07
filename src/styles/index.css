@@ -209,7 +209,7 @@ body {
     display: none !important;
   }
 
-  /* Thermal 80mm - narrow roll */
+  /* Thermal 80mm — narrow roll */
   @page {
     size: 80mm auto;
     margin: 3mm;
@@ -225,7 +225,7 @@ body {
 }
 
 /* For A4 printers, remove the @page override by targeting a specific class
-   (optional - if you later want per-printer classes) */
+   (optional — if you later want per-printer classes) */
 
 
 
@@ -474,5 +474,52 @@ body {
   button,
   a {
     -webkit-tap-highlight-color: transparent;
+  }
+}
+/* ─── Phones: modals open as bottom sheets ─────────────────────────
+   Full width, pinned to the bottom, body scrolls, and the action row
+   (Cancel / Save) stays visible at the bottom while you scroll. */
+@media (max-width: 767px) {
+  .mantine-Modal-inner {
+    padding: 0 !important;
+    align-items: flex-end !important;
+  }
+  .mantine-Modal-content {
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+    max-height: 92dvh !important;
+    border-radius: 16px 16px 0 0 !important;
+  }
+  .mantine-Modal-header {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #F1F3F5;
+  }
+  .mantine-Modal-body {
+    padding-top: 16px;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+  /* Action row: the last right-aligned button group in a modal */
+  .mantine-Modal-body .modal-actions,
+  .mantine-Modal-body .mantine-Group-root[style*='--group-justify: flex-end']:last-child {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    background: #FFFFFF;
+    margin-left: -16px;
+    margin-right: -16px;
+    margin-bottom: calc(-16px - env(safe-area-inset-bottom));
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    border-top: 1px solid #F1F3F5;
+    flex-wrap: nowrap;
+  }
+  .mantine-Modal-body .modal-actions > .mantine-Button-root,
+  .mantine-Modal-body .mantine-Group-root[style*='--group-justify: flex-end']:last-child > .mantine-Button-root {
+    flex: 1;
+  }
+  /* 16px inputs: stops iPhone zooming in when a field is tapped */
+  .mantine-Input-input,
+  .mantine-Textarea-input {
+    font-size: 16px !important;
   }
 }

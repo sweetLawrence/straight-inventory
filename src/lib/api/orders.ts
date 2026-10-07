@@ -1,3 +1,4 @@
+import type { ListFilters } from './listFilters';
 // import { apiClient, ApiResponse, PaginatedResponse } from './client';
 
 // // ─── Orders ─────────────────────────────────────────────────────────
@@ -283,7 +284,7 @@ export interface Order {
   bills?: Bill[];
 }
 
-export async function listOrders(params?: {
+export async function listOrders(params?: ListFilters & {
   page?: number;
   limit?: number;
   waiter_id?: string;
@@ -415,6 +416,8 @@ export interface Bill {
   opened_at: string;
   closed_at: string | null;
   created_at: string;
+  /** Customer paid vs money confirmed: none | awaiting_verification | verified | failed */
+  payment_state?: 'none' | 'awaiting_verification' | 'verified' | 'failed';
   waiter?: { id: string; full_name: string; username: string };
   
 
@@ -437,7 +440,7 @@ export interface Bill {
   order?: Order;
 }
 
-export async function listBills(params?: {
+export async function listBills(params?: ListFilters & {
   page?: number;
   limit?: number;
   waiter_id?: string;

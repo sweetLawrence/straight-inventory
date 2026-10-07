@@ -58,3 +58,11 @@ export function formatPacks(
   if (packs === 0) return `${loose} loose`;
   return loose ? `${packs} ${plural(packs)} + ${loose}` : `${packs} ${plural(packs)}`;
 }
+
+/** Quantities: 7 not 7.000; 0.5 kg stays 0.5 */
+export function formatQty(value: number | string | null | undefined, maxDecimals = 3): string {
+  if (value === null || value === undefined || value === '') return '-';
+  const n = Number(value);
+  if (!Number.isFinite(n)) return String(value);
+  return n.toLocaleString('en-KE', { maximumFractionDigits: maxDecimals });
+}

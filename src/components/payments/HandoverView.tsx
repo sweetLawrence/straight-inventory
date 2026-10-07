@@ -1,4 +1,4 @@
-import { Alert, Button, Card, Group, Loader, SegmentedControl, SimpleGrid, Stack, Table, Text, Title } from '@mantine/core';
+import { Alert, Box, Button, Card, Group, Loader, SegmentedControl, SimpleGrid, Stack, Table, Text, Title } from '@mantine/core';
 import { useState } from 'react';
 import dayjs from 'dayjs';
 import { Info, RotateCw } from 'lucide-react';
@@ -170,7 +170,47 @@ export function HandoverView({ title }: { title: string }) {
         <Title order={4} mb="sm">
           By method
         </Title>
-        <Table.ScrollContainer minWidth={560}>
+        {/* Phones: one row per method */}
+        <Stack gap={0} hiddenFrom="sm">
+          {METHODS.map(({ key, label }, i) => {
+            const st = h.status_by_method[key] || { pending: 0, verified: 0, unverified: 0, failed: 0 };
+            const parts = [
+              st.pending ? { n: st.pending, t: 'waiting', c: C.orange } : null,
+              st.verified ? { n: st.verified, t: 'verified', c: C.muted } : null,
+              st.unverified ? { n: st.unverified, t: 'not matched', c: C.orange } : null,
+              st.failed ? { n: st.failed, t: 'failed', c: C.red } : null,
+            ].filter(Boolean) as { n: number; t: string; c: string }[];
+            return (
+              <Group
+                key={key}
+                justify="space-between"
+                wrap="nowrap"
+                py={8}
+                style={{ borderTop: i ? '1px solid #F1F3F5' : undefined }}
+              >
+                <Box>
+                  <Text fw={500} size="sm">
+                    {label}
+                  </Text>
+                  <Text size="xs" c="dimmed">
+                    {parts.length
+                      ? parts.map((p, j) => (
+                          <span key={p.t} style={{ color: p.c }}>
+                            {j ? ' · ' : ''}
+                            {p.n} {p.t}
+                          </span>
+                        ))
+                      : 'No payments'}
+                  </Text>
+                </Box>
+                <Text fw={600} size="sm" style={{ whiteSpace: 'nowrap' }}>
+                  {formatCurrency(h.totals_by_method[key])}
+                </Text>
+              </Group>
+            );
+          })}
+        </Stack>
+        <Table.ScrollContainer minWidth={560} visibleFrom="sm">
           <Table>
             <Table.Thead>
               <Table.Tr>

@@ -14,6 +14,7 @@ import {
 import dayjs from 'dayjs'
 import { ArrowRight, Banknote, GlassWater, Receipt, TriangleAlert } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
+import { StatusDot } from '@/components/StatusDot'
 import {
   BAR,
   DrinkCard,
@@ -35,7 +36,7 @@ function BarDashboard () {
   const auth = useAuth()
   const stock = useBarStock()
   const pending = useBarPending(1, 50)
-  const handover = useCurrentHandover()
+  const handover = useCurrentHandover(!auth.hasRole('md', 'admin'))
   const [openId, setOpenId] = useState<string | null>(null)
 
   const data = stock.data
@@ -112,16 +113,22 @@ function BarDashboard () {
       ) : (
         <>
           {attention.length > 0 && (
-            <Card withBorder radius='md' p='md' style={{ borderLeft: `4px solid ${BAR.orange}` }}>
-              <Text fw={600} mb='xs' style={{ color: BAR.navy }}>
-                Needs restocking
-              </Text>
+            <Card withBorder radius='md' p='md'>
+              <Group gap={8} mb='xs' wrap='nowrap'>
+                <StatusDot color={attention.some(d => d.status === 'out') ? BAR.red : BAR.orange} size={10} />
+                <Text fw={600} style={{ color: BAR.navy }}>
+                  Needs restocking
+                </Text>
+              </Group>
               <Stack gap={6}>
                 {attention.map(d => (
                   <Group key={d.id} justify='space-between' wrap='nowrap'>
-                    <Text size='sm' truncate>
-                      {d.name}
-                    </Text>
+                    <Group gap={8} wrap='nowrap' style={{ minWidth: 0 }}>
+                      <StatusDot color={d.status === 'out' ? BAR.red : BAR.orange} />
+                      <Text size='sm' truncate>
+                        {d.name}
+                      </Text>
+                    </Group>
                     <Group gap={6} wrap='nowrap'>
                       <Text size='sm' fw={700} style={{ color: d.status === 'out' ? BAR.red : BAR.orange }}>
                         {d.balance} left
@@ -195,11 +202,14 @@ function Stat ({
   color: string
 }) {
   return (
-    <Card withBorder radius='md' p='md' style={{ borderTop: `3px solid ${color}` }}>
+    <Card withBorder radius='md' p='md'>
       <Group justify='space-between' wrap='nowrap' gap={4}>
-        <Text size='xs' c='dimmed' fw={600} tt='uppercase'>
-          {label}
-        </Text>
+        <Group gap={6} wrap='nowrap' style={{ minWidth: 0 }}>
+          <StatusDot color={color} />
+          <Text size='xs' c='dimmed' fw={600} tt='uppercase' truncate>
+            {label}
+          </Text>
+        </Group>
         <Box visibleFrom='sm' style={{ color }}>
           {icon}
         </Box>

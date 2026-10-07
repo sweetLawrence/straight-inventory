@@ -10,6 +10,8 @@ import { StatBadge } from '@/components/StatBadge';
 import { FloatEntryModal } from '@/components/payments/FloatEntryModal';
 import { FloatEntry } from '@/lib/api/payments';
 import { formatCurrency, formatDateTime } from '@/lib/utils/format';
+import { getErrorMessage } from '@/lib/api/client'
+import { useAuth } from '@/lib/auth/useAuth'
 
 export const Route = createFileRoute('/_app/float')({
   component: FloatPage,
@@ -19,12 +21,13 @@ function FloatPage() {
   const [page, setPage] = useState(1);
   const [opened, { open, close }] = useDisclosure(false);
   const query = useFloat({ page, limit: 20 });
+  const canRecord = useAuth().hasPermission('cash.drop.verify');
 
   const columns: Column<FloatEntry>[] = [
     {
       key: 'recorded_at',
       header: 'When',
-      render: (r) => formatDateTime(r.recorded_at),
+      render: (r) => <span style={{ whiteSpace: 'nowrap' }}>{formatDateTime(r.recorded_at)}</span>,
     },
     {
       key: 'waiter',
@@ -53,18 +56,20 @@ function FloatPage() {
     <>
       <PageHeader
         title="Float Ledger"
-        subtitle="Issued, returned, and topped-up float"
+        subtitle={canRecord ? 'Issued, returned, and topped-up float' : 'Float the cashier gave you and took back'}
         actions={
-          <Button leftSection={<Plus size={16} />} onClick={open}>
-            New Entry
-          </Button>
+          canRecord && (
+            <Button leftSection={<Plus size={16} />} onClick={open}>
+              New Entry
+            </Button>
+          )
         }
       />
       <DataTable
         data={query.data?.data ?? []}
         columns={columns}
         loading={query.isLoading}
-        error={query.error ? 'Failed to load float' : null}
+        error={query.error ? getErrorMessage(query.error, 'Failed to load float') : null}
         rowKey={(r) => r.id}
         meta={query.data?.meta}
         onPageChange={setPage}

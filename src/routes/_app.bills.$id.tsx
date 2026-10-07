@@ -1,513 +1,7 @@
-// import { createFileRoute, Link } from '@tanstack/react-router';
-// import {
-//   Button,
-//   Card,
-//   Grid,
-//   Group,
-//   Stack,
-//   Table,
-//   Text,
-//   Box,
-//   Divider,
-//   ThemeIcon,
-//   Badge,
-// } from '@mantine/core';
-// import { useDisclosure } from '@mantine/hooks';
-// import { ArrowLeft, Banknote, Percent, Receipt, CreditCard } from 'lucide-react';
-// import { useBill } from '@/hooks/useOrders';
-// import { useAuth } from '@/lib/auth/useAuth';
-// import { PageHeader } from '@/components/PageHeader';
-// import { LoadingState } from '@/components/LoadingState';
-// import { EmptyState } from '@/components/EmptyState';
-// import { StatBadge } from '@/components/StatBadge';
-// import { ApplyDiscountModal } from '@/components/orders/ApplyDiscountModal';
-// import { RecordPaymentModal } from '@/components/payments/RecordPaymentModal';
-// import { formatCurrency, formatDateTime } from '@/lib/utils/format';
-
-// import { Printer } from 'lucide-react';
-
-// export const Route = createFileRoute('/_app/bills/$id')({
-//   component: BillDetailPage,
-// });
-
-// /* -------------------------------------------------------------- */
-// /*  Summary cell - small, quiet label + strong mono number        */
-// /* -------------------------------------------------------------- */
-// function SummaryCell({
-//   label,
-//   value,
-//   accent,
-//   emphasis,
-// }: {
-//   label: string;
-//   value: string;
-//   accent?: 'red' | 'blue' | 'gray';
-//   emphasis?: boolean;
-// }) {
-//   const color =
-//     accent === 'red'
-//       ? 'red.7'
-//       : accent === 'blue'
-//       ? 'blue.7'
-//       : emphasis
-//       ? 'gray.9'
-//       : undefined;
-
-//   return (
-//     <Box
-//       p="md"
-//       style={{
-//         borderRight: '1px solid var(--mantine-color-gray-2)',
-//         height: '100%',
-//       }}
-//     >
-//       <Text
-//         size="xs"
-//         c="dimmed"
-//         fw={600}
-//         tt="uppercase"
-//         style={{ letterSpacing: 0.6 }}
-//         mb={6}
-//       >
-//         {label}
-//       </Text>
-//       <Text
-//         fw={emphasis ? 700 : 600}
-//         size={emphasis ? 'xl' : 'lg'}
-//         c={color}
-//         ff="monospace"
-//         style={{ letterSpacing: '-0.02em' }}
-//       >
-//         {value}
-//       </Text>
-//     </Box>
-//   );
-// }
-
-// /* -------------------------------------------------------------- */
-// /*  Section card - consistent header style for every block        */
-// /* -------------------------------------------------------------- */
-// function SectionCard({
-//   icon,
-//   title,
-//   right,
-//   children,
-//   noPadding,
-// }: {
-//   icon: React.ReactNode;
-//   title: string;
-//   right?: React.ReactNode;
-//   children: React.ReactNode;
-//   noPadding?: boolean;
-// }) {
-//   return (
-//     <Card
-//       withBorder
-//       radius="md"
-//       p={0}
-//       mb="lg"
-//       style={{ overflow: 'hidden' }}
-//     >
-//       <Group
-//         justify="space-between"
-//         px="lg"
-//         py="md"
-//         style={{ borderBottom: '1px solid var(--mantine-color-gray-2)' }}
-//       >
-//         <Group gap="sm">
-//           <ThemeIcon size={28} radius="md" variant="light" color="blue">
-//             {icon}
-//           </ThemeIcon>
-//           <Text fw={600} size="sm">
-//             {title}
-//           </Text>
-//         </Group>
-//         {right}
-//       </Group>
-//       <Box p={noPadding ? 0 : 'lg'}>{children}</Box>
-//     </Card>
-//   );
-// }
-
-// function BillDetailPage() {
-//   const { id } = Route.useParams();
-//   const auth = useAuth();
-//   const bill = useBill(id);
-//   const [discountOpen, { open: openDiscount, close: closeDiscount }] =
-//     useDisclosure(false);
-//   const [paymentOpen, { open: openPayment, close: closePayment }] =
-//     useDisclosure(false);
-
-//   if (bill.isLoading) return <LoadingState />;
-//   if (bill.error || !bill.data) return <EmptyState title="Bill not found" />;
-
-//   const b = bill.data;
-//   const canDiscount =
-//     b.status === 'open' && auth.hasPermission('bill.discount');
-//   const canPay = b.status === 'open' && auth.hasPermission('payment.record');
-
-//   const hasDiscount = parseFloat(b.discount_total) > 0;
-
-//   return (
-//     <>
-//       {/* Back link */}
-//       <Button
-//         component={Link}
-//         to="/bills"
-//         variant="subtle"
-//         color="gray"
-//         size="sm"
-//         leftSection={<ArrowLeft size={15} />}
-//         mb="md"
-//         px="xs"
-//       >
-//         Back to bills
-//       </Button>
-
-//       <PageHeader
-//         title={b.bill_ref}
-//         subtitle={`Customer: ${b.customer_code} • Waiter: ${b.waiter?.full_name || '-'}`}
-//         actions={
-//           <Group gap="sm">
-//             <StatBadge value={b.status} />
-//             {canDiscount && (
-//               <Button
-//                 leftSection={<Percent size={15} />}
-//                 variant="light"
-//                 radius="md"
-//                 onClick={openDiscount}
-//               >
-//                 Apply Discount
-//               </Button>
-//             )}
-//             {canPay && (
-//               <Button
-//                 leftSection={<Banknote size={15} />}
-//                 radius="md"
-//                 onClick={openPayment}
-//               >
-//                 Record Payment
-//               </Button>
-//             )}
-//           </Group>
-//         }
-//       />
-
-//       {/* ---------------- Summary strip ---------------- */}
-//       <Card
-//         withBorder
-//         radius="md"
-//         p={0}
-//         mb="lg"
-//         style={{ overflow: 'hidden' }}
-//       >
-//         <Grid>
-//           <Grid.Col span={{ base: 12, sm: 4 }}>
-//             <SummaryCell label="Gross" value={formatCurrency(b.gross_total)} />
-//           </Grid.Col>
-//           <Grid.Col span={{ base: 12, sm: 4 }}>
-//             <SummaryCell
-//               label="Discount"
-//               value={
-//                 hasDiscount
-//                   ? `-${formatCurrency(b.discount_total)}`
-//                   : formatCurrency(0)
-//               }
-//               accent={hasDiscount ? 'red' : 'gray'}
-//             />
-//           </Grid.Col>
-//           <Grid.Col span={{ base: 12, sm: 4 }}>
-//             <Box
-//               p="md"
-//               style={{ background: 'var(--mantine-color-blue-0)' }}
-//             >
-//               <Text
-//                 size="xs"
-//                 c="blue.8"
-//                 fw={600}
-//                 tt="uppercase"
-//                 style={{ letterSpacing: 0.6 }}
-//                 mb={6}
-//               >
-//                 Net Total
-//               </Text>
-//               <Text
-//                 fw={700}
-//                 size="xl"
-//                 c="blue.9"
-//                 ff="monospace"
-//                 style={{ letterSpacing: '-0.02em' }}
-//               >
-//                 {formatCurrency(b.net_total)}
-//               </Text>
-//             </Box>
-//           </Grid.Col>
-//         </Grid>
-//       </Card>
-
-//       {/* ---------------- Bill lines ---------------- */}
-//       <SectionCard
-//         icon={<Receipt size={15} />}
-//         title="Bill Lines"
-//         right={
-//           <Badge variant="light" color="gray" radius="sm" size="md">
-//             {b.bill_lines?.length ?? 0} item
-//             {(b.bill_lines?.length ?? 0) === 1 ? '' : 's'}
-//           </Badge>
-//         }
-//         noPadding
-//       >
-//         <Table
-//           horizontalSpacing="lg"
-//           verticalSpacing="sm"
-//           highlightOnHover
-//           highlightOnHoverColor="var(--mantine-color-gray-0)"
-//           styles={{
-//             th: {
-//               background: 'var(--mantine-color-gray-0)',
-//               color: 'var(--mantine-color-gray-6)',
-//               fontWeight: 600,
-//               fontSize: 11,
-//               letterSpacing: 0.6,
-//               textTransform: 'uppercase',
-//               borderBottom: '1px solid var(--mantine-color-gray-2)',
-//             },
-//             td: {
-//               borderBottom: '1px solid var(--mantine-color-gray-1)',
-//               fontSize: 13.5,
-//             },
-//             tr: {
-//               '&:last-of-type td': { borderBottom: 'none' },
-//             },
-//           }}
-//         >
-//           <Table.Thead>
-//             <Table.Tr>
-//               <Table.Th>Description</Table.Th>
-//               <Table.Th style={{ textAlign: 'right', width: 80 }}>Qty</Table.Th>
-//               <Table.Th style={{ textAlign: 'right', width: 140 }}>
-//                 Unit Price
-//               </Table.Th>
-//               <Table.Th style={{ textAlign: 'right', width: 140 }}>Total</Table.Th>
-//             </Table.Tr>
-//           </Table.Thead>
-//           <Table.Tbody>
-//             {b.bill_lines?.map((line) => (
-//               <Table.Tr key={line.id}>
-//                 <Table.Td>
-//                   <Text size="sm" fw={500}>
-//                     {line.description}
-//                   </Text>
-//                 </Table.Td>
-//                 <Table.Td style={{ textAlign: 'right' }}>
-//                   <Text size="sm" c="dimmed" ff="monospace">
-//                     {line.quantity}
-//                   </Text>
-//                 </Table.Td>
-//                 <Table.Td style={{ textAlign: 'right' }}>
-//                   <Text size="sm" c="dimmed" ff="monospace">
-//                     {formatCurrency(line.unit_price)}
-//                   </Text>
-//                 </Table.Td>
-//                 <Table.Td style={{ textAlign: 'right' }}>
-//                   <Text size="sm" fw={600} ff="monospace">
-//                     {formatCurrency(line.line_total)}
-//                   </Text>
-//                 </Table.Td>
-//               </Table.Tr>
-//             ))}
-//           </Table.Tbody>
-//         </Table>
-//       </SectionCard>
-
-//       {/* ---------------- Discounts ---------------- */}
-//       {b.discounts && b.discounts.length > 0 && (
-//         <SectionCard icon={<Percent size={15} />} title="Discounts">
-//           <Stack gap="md">
-//             {b.discounts.map((d, i) => (
-//               <Box key={d.id}>
-//                 {i > 0 && <Divider mb="md" />}
-//                 <Group justify="space-between" align="flex-start" wrap="nowrap">
-//                   <Stack gap={2}>
-//                     <Text size="sm" fw={500}>
-//                       {d.reason}
-//                     </Text>
-//                     <Text size="xs" c="dimmed">
-//                       By {d.authorized_by_user?.full_name || '-'} •{' '}
-//                       {formatDateTime(d.authorized_at)}
-//                     </Text>
-//                   </Stack>
-//                   <Text c="red.7" fw={600} ff="monospace" size="sm">
-//                     -{formatCurrency(d.amount)}
-//                   </Text>
-//                 </Group>
-//               </Box>
-//             ))}
-//           </Stack>
-//         </SectionCard>
-//       )}
-
-//       {/* ---------------- Payment ---------------- */}
-//       {b.payment && (
-//         <SectionCard
-//           icon={<CreditCard size={15} />}
-//           title="Payment"
-//           right={<StatBadge value={b.payment.status} />}
-//           noPadding
-//         >
-//           {/* Meta row */}
-//           <Group
-//             justify="space-between"
-//             px="lg"
-//             py="sm"
-//             style={{
-//               background: 'var(--mantine-color-gray-0)',
-//               borderBottom: '1px solid var(--mantine-color-gray-2)',
-//             }}
-//           >
-//             <Text size="xs" c="dimmed" fw={600} tt="uppercase" style={{ letterSpacing: 0.6 }}>
-//               Payment Ref
-//             </Text>
-//             <Text size="sm" fw={600} ff="monospace">
-//               {b.payment.payment_ref}
-//             </Text>
-//           </Group>
-
-//           <Table
-//             horizontalSpacing="lg"
-//             verticalSpacing="sm"
-//             highlightOnHover
-//             highlightOnHoverColor="var(--mantine-color-gray-0)"
-//             styles={{
-//               th: {
-//                 background: 'var(--mantine-color-gray-0)',
-//                 color: 'var(--mantine-color-gray-6)',
-//                 fontWeight: 600,
-//                 fontSize: 11,
-//                 letterSpacing: 0.6,
-//                 textTransform: 'uppercase',
-//                 borderBottom: '1px solid var(--mantine-color-gray-2)',
-//               },
-//               td: {
-//                 borderBottom: '1px solid var(--mantine-color-gray-1)',
-//                 fontSize: 13.5,
-//               },
-//               tr: {
-//                 '&:last-of-type td': { borderBottom: 'none' },
-//               },
-//             }}
-//           >
-//             <Table.Thead>
-//               <Table.Tr>
-//                 <Table.Th>Method</Table.Th>
-//                 <Table.Th>Reference</Table.Th>
-//                 <Table.Th>Status</Table.Th>
-//                 <Table.Th style={{ textAlign: 'right' }}>Amount</Table.Th>
-//               </Table.Tr>
-//             </Table.Thead>
-//             <Table.Tbody>
-//               {b.payment.payment_lines?.map((pl) => (
-//                 <Table.Tr key={pl.id}>
-//                   <Table.Td>
-//                     <StatBadge value={pl.method} />
-//                   </Table.Td>
-//                   <Table.Td>
-//                     <Text size="sm" c={pl.transaction_ref ? undefined : 'dimmed'} ff="monospace">
-//                       {pl.transaction_ref || '-'}
-//                     </Text>
-//                   </Table.Td>
-//                   <Table.Td>
-//                     <StatBadge value={pl.verification_status} />
-//                   </Table.Td>
-//                   <Table.Td style={{ textAlign: 'right' }}>
-//                     <Text size="sm" fw={600} ff="monospace">
-//                       {formatCurrency(pl.amount)}
-//                     </Text>
-//                   </Table.Td>
-//                 </Table.Tr>
-//               ))}
-//             </Table.Tbody>
-//           </Table>
-//         </SectionCard>
-//       )}
-
-//       <ApplyDiscountModal
-//         opened={discountOpen}
-//         onClose={closeDiscount}
-//         billId={id}
-//         maxAmount={parseFloat(b.net_total)}
-//       />
-
-//       <RecordPaymentModal
-//         opened={paymentOpen}
-//         onClose={closePayment}
-//         billId={id}
-//         billNetTotal={parseFloat(b.net_total)}
-//       />
-//     </>
-//   );
-// }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import { createFileRoute, Link } from '@tanstack/react-router';
-import {
-  Button,
-  Card,
-  Grid,
-  Group,
-  Stack,
-  Table,
-  Text,
-  Title,
-  Box,
-  Divider,
-  ThemeIcon,
-  Badge,
-} from '@mantine/core';
+import { Badge, Box, Button, Card, Divider, Group, Stack, Text, ThemeIcon } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import {
-  ArrowLeft,
-  Banknote,
-  Percent,
-  Receipt,
-  CreditCard,
-  Printer,
-} from 'lucide-react';
+import { ArrowLeft, Banknote, CreditCard, Percent, Printer, Receipt } from 'lucide-react';
 import { useBill } from '@/hooks/useOrders';
 import { useAuth } from '@/lib/auth/useAuth';
 import { PageHeader } from '@/components/PageHeader';
@@ -516,97 +10,38 @@ import { EmptyState } from '@/components/EmptyState';
 import { StatBadge } from '@/components/StatBadge';
 import { ApplyDiscountModal } from '@/components/orders/ApplyDiscountModal';
 import { RecordPaymentModal } from '@/components/payments/RecordPaymentModal';
-import { formatCurrency, formatDateTime } from '@/lib/utils/format';
+import { BillStatusBadge } from '@/components/orders/BillStatusBadge';
+import { formatCurrency, formatDateTime, formatQty } from '@/lib/utils/format';
 
 export const Route = createFileRoute('/_app/bills/$id')({
   component: BillDetailPage,
 });
 
-/* -------------------------------------------------------------- */
-/*  Summary cell - small, quiet label + strong mono number        */
-/* -------------------------------------------------------------- */
-function SummaryCell({
-  label,
-  value,
-  accent,
-  emphasis,
-}: {
-  label: string;
-  value: string;
-  accent?: 'red' | 'blue' | 'gray';
-  emphasis?: boolean;
-}) {
-  const color =
-    accent === 'red'
-      ? 'red.7'
-      : accent === 'blue'
-      ? 'blue.7'
-      : emphasis
-      ? 'gray.9'
-      : undefined;
+const C = {
+  navy: '#1F3A5F',
+  muted: '#868E96',
+  line: '#F1F3F5',
+  red: '#C92A2A',
+  blueBg: '#E7F5FF',
+  blue: '#1864AB',
+};
 
-  return (
-    <Box
-      p="md"
-      style={{
-        borderRight: '1px solid var(--mantine-color-gray-2)',
-        height: '100%',
-      }}
-    >
-      <Text
-        size="xs"
-        c="dimmed"
-        fw={600}
-        tt="uppercase"
-        style={{ letterSpacing: 0.6 }}
-        mb={6}
-      >
-        {label}
-      </Text>
-      <Text
-        fw={emphasis ? 700 : 600}
-        size={emphasis ? 'xl' : 'lg'}
-        c={color}
-        ff="monospace"
-        style={{ letterSpacing: '-0.02em' }}
-      >
-        {value}
-      </Text>
-    </Box>
-  );
-}
-
-/* -------------------------------------------------------------- */
-/*  Section card - consistent header style for every block        */
-/* -------------------------------------------------------------- */
+// Card with a small header; body is a list of rows, so it fits any screen width
 function SectionCard({
   icon,
   title,
   right,
   children,
-  noPadding,
 }: {
   icon: React.ReactNode;
   title: string;
   right?: React.ReactNode;
   children: React.ReactNode;
-  noPadding?: boolean;
 }) {
   return (
-    <Card
-      withBorder
-      radius="md"
-      p={0}
-      mb="lg"
-      style={{ overflow: 'hidden' }}
-    >
-      <Group
-        justify="space-between"
-        px="lg"
-        py="md"
-        style={{ borderBottom: '1px solid var(--mantine-color-gray-2)' }}
-      >
-        <Group gap="sm">
+    <Card withBorder radius="md" p={0} mb="md" style={{ overflow: 'hidden' }}>
+      <Group justify="space-between" px="md" py="sm" wrap="nowrap" style={{ borderBottom: `1px solid ${C.line}` }}>
+        <Group gap="sm" wrap="nowrap">
           <ThemeIcon size={28} radius="md" variant="light" color="blue">
             {icon}
           </ThemeIcon>
@@ -616,8 +51,16 @@ function SectionCard({
         </Group>
         {right}
       </Group>
-      <Box p={noPadding ? 0 : 'lg'}>{children}</Box>
+      {children}
     </Card>
+  );
+}
+
+function Row({ children, last }: { children: React.ReactNode; last?: boolean }) {
+  return (
+    <Box px="md" py="sm" style={{ borderBottom: last ? 'none' : `1px solid ${C.line}` }}>
+      {children}
+    </Box>
   );
 }
 
@@ -625,24 +68,21 @@ function BillDetailPage() {
   const { id } = Route.useParams();
   const auth = useAuth();
   const bill = useBill(id);
-  const [discountOpen, { open: openDiscount, close: closeDiscount }] =
-    useDisclosure(false);
-  const [paymentOpen, { open: openPayment, close: closePayment }] =
-    useDisclosure(false);
+  const [discountOpen, { open: openDiscount, close: closeDiscount }] = useDisclosure(false);
+  const [paymentOpen, { open: openPayment, close: closePayment }] = useDisclosure(false);
 
   if (bill.isLoading) return <LoadingState />;
   if (bill.error || !bill.data) return <EmptyState title="Bill not found" />;
 
   const b = bill.data;
-  const canDiscount =
-    b.status === 'open' && auth.hasPermission('bill.discount');
+  const canDiscount = b.status === 'open' && auth.hasPermission('bill.discount');
   const canPay = b.status === 'open' && auth.hasPermission('payment.record');
-
   const hasDiscount = parseFloat(b.discount_total) > 0;
+  const lines = b.bill_lines ?? [];
+  const table = b.order?.table_number;
 
   return (
     <>
-      {/* Back link */}
       <Button
         component={Link}
         to="/bills"
@@ -650,7 +90,7 @@ function BillDetailPage() {
         color="gray"
         size="sm"
         leftSection={<ArrowLeft size={15} />}
-        mb="md"
+        mb="xs"
         px="xs"
       >
         Back to bills
@@ -658,296 +98,162 @@ function BillDetailPage() {
 
       <PageHeader
         title={b.bill_ref}
-        subtitle={`Customer: ${b.customer_code} • Waiter: ${b.waiter?.full_name || '-'}`}
+        subtitle={[table ? `Table ${table}` : null, b.customer_code, b.waiter?.full_name].filter(Boolean).join(' · ')}
         actions={
-          <Group gap="sm">
-            <StatBadge value={b.status} />
+          <Group gap="xs">
+            <BillStatusBadge status={b.status} paymentState={b.payment_state} />
             <Button
               leftSection={<Printer size={15} />}
-              variant="light"
-              radius="md"
+              variant="default"
+              size="sm"
               onClick={() => window.open(`/bill/${b.id}`, '_blank')}
             >
               Print
             </Button>
-            {canDiscount && (
-              <Button
-                leftSection={<Percent size={15} />}
-                variant="light"
-                radius="md"
-                onClick={openDiscount}
-              >
-                Apply Discount
-              </Button>
-            )}
-            {canPay && (
-              <Button
-                leftSection={<Banknote size={15} />}
-                radius="md"
-                onClick={openPayment}
-              >
-                Record Payment
-              </Button>
-            )}
           </Group>
         }
       />
 
-      {/* ---------------- Summary strip ---------------- */}
-      <Card
-        withBorder
-        radius="md"
-        p={0}
-        mb="lg"
-        style={{ overflow: 'hidden' }}
-      >
-        <Grid>
-          <Grid.Col span={{ base: 12, sm: 4 }}>
-            <SummaryCell label="Gross" value={formatCurrency(b.gross_total)} />
-          </Grid.Col>
-          <Grid.Col span={{ base: 12, sm: 4 }}>
-            <SummaryCell
-              label="Discount"
-              value={
-                hasDiscount
-                  ? `-${formatCurrency(b.discount_total)}`
-                  : formatCurrency(0)
-              }
-              accent={hasDiscount ? 'red' : 'gray'}
-            />
-          </Grid.Col>
-          <Grid.Col span={{ base: 12, sm: 4 }}>
-            <Box
-              p="md"
-              style={{ background: 'var(--mantine-color-blue-0)' }}
-            >
-              <Text
-                size="xs"
-                c="blue.8"
-                fw={600}
-                tt="uppercase"
-                style={{ letterSpacing: 0.6 }}
-                mb={6}
-              >
-                Net Total
-              </Text>
-              <Text
-                fw={700}
-                size="xl"
-                c="blue.9"
-                ff="monospace"
-                style={{ letterSpacing: '-0.02em' }}
-              >
-                {formatCurrency(b.net_total)}
-              </Text>
-            </Box>
-          </Grid.Col>
-        </Grid>
+      {(canPay || canDiscount) && (
+        <Group gap="sm" mb="md" grow preventGrowOverflow={false}>
+          {canPay && (
+            <Button size="md" leftSection={<Banknote size={18} />} onClick={openPayment}>
+              Record Payment
+            </Button>
+          )}
+          {canDiscount && (
+            <Button size="md" variant="light" leftSection={<Percent size={18} />} onClick={openDiscount}>
+              Discount
+            </Button>
+          )}
+        </Group>
+      )}
+
+      {/* Totals */}
+      <Card withBorder radius="md" p={0} mb="md" style={{ overflow: 'hidden' }}>
+        <Stack gap={6} px="md" py="sm">
+          <Group justify="space-between">
+            <Text size="sm" c="dimmed">
+              Gross
+            </Text>
+            <Text size="sm" fw={600}>
+              {formatCurrency(b.gross_total)}
+            </Text>
+          </Group>
+          <Group justify="space-between">
+            <Text size="sm" c="dimmed">
+              Discount
+            </Text>
+            <Text size="sm" fw={600} style={{ color: hasDiscount ? C.red : C.muted }}>
+              {hasDiscount ? `−${formatCurrency(b.discount_total)}` : formatCurrency(0)}
+            </Text>
+          </Group>
+        </Stack>
+        <Group justify="space-between" px="md" py="sm" style={{ background: C.blueBg }}>
+          <Text size="sm" fw={700} style={{ color: C.blue }}>
+            Net total
+          </Text>
+          <Text fw={800} fz={22} style={{ color: C.blue }}>
+            {formatCurrency(b.net_total)}
+          </Text>
+        </Group>
       </Card>
 
-      {/* ---------------- Bill lines ---------------- */}
+      {/* Lines */}
       <SectionCard
         icon={<Receipt size={15} />}
         title="Bill Lines"
         right={
-          <Badge variant="light" color="gray" radius="sm" size="md">
-            {b.bill_lines?.length ?? 0} item
-            {(b.bill_lines?.length ?? 0) === 1 ? '' : 's'}
+          <Badge variant="light" color="gray" radius="sm">
+            {lines.length} item{lines.length === 1 ? '' : 's'}
           </Badge>
         }
-        noPadding
       >
-        <Table
-          horizontalSpacing="lg"
-          verticalSpacing="sm"
-          highlightOnHover
-          highlightOnHoverColor="var(--mantine-color-gray-0)"
-          styles={{
-            th: {
-              background: 'var(--mantine-color-gray-0)',
-              color: 'var(--mantine-color-gray-6)',
-              fontWeight: 600,
-              fontSize: 11,
-              letterSpacing: 0.6,
-              textTransform: 'uppercase',
-              borderBottom: '1px solid var(--mantine-color-gray-2)',
-            },
-            td: {
-              borderBottom: '1px solid var(--mantine-color-gray-1)',
-              fontSize: 13.5,
-            },
-            tr: {
-              '&:last-of-type td': { borderBottom: 'none' },
-            },
-          }}
-        >
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>Description</Table.Th>
-              <Table.Th style={{ textAlign: 'right', width: 80 }}>Qty</Table.Th>
-              <Table.Th style={{ textAlign: 'right', width: 140 }}>
-                Unit Price
-              </Table.Th>
-              <Table.Th style={{ textAlign: 'right', width: 140 }}>Total</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {b.bill_lines?.map((line) => (
-              <Table.Tr key={line.id}>
-                <Table.Td>
-                  <Text size="sm" fw={500}>
-                    {line.description}
-                  </Text>
-                </Table.Td>
-                <Table.Td style={{ textAlign: 'right' }}>
-                  <Text size="sm" c="dimmed" ff="monospace">
-                    {line.quantity}
-                  </Text>
-                </Table.Td>
-                <Table.Td style={{ textAlign: 'right' }}>
-                  <Text size="sm" c="dimmed" ff="monospace">
-                    {formatCurrency(line.unit_price)}
-                  </Text>
-                </Table.Td>
-                <Table.Td style={{ textAlign: 'right' }}>
-                  <Text size="sm" fw={600} ff="monospace">
-                    {formatCurrency(line.line_total)}
-                  </Text>
-                </Table.Td>
-              </Table.Tr>
-            ))}
-          </Table.Tbody>
-        </Table>
+        {lines.map((line, i) => (
+          <Row key={line.id} last={i === lines.length - 1}>
+            <Group justify="space-between" align="flex-start" wrap="nowrap" gap="sm">
+              <Box style={{ minWidth: 0 }}>
+                <Text size="sm" fw={500}>
+                  {line.description}
+                </Text>
+                <Text size="xs" c="dimmed">
+                  {formatQty(line.quantity)} × {formatCurrency(line.unit_price)}
+                </Text>
+              </Box>
+              <Text size="sm" fw={700} style={{ whiteSpace: 'nowrap', color: C.navy }}>
+                {formatCurrency(line.line_total)}
+              </Text>
+            </Group>
+          </Row>
+        ))}
       </SectionCard>
 
-      {/* ---------------- Discounts ---------------- */}
+      {/* Discounts */}
       {b.discounts && b.discounts.length > 0 && (
         <SectionCard icon={<Percent size={15} />} title="Discounts">
-          <Stack gap="md">
-            {b.discounts.map((d, i) => (
-              <Box key={d.id}>
-                {i > 0 && <Divider mb="md" />}
-                <Group justify="space-between" align="flex-start" wrap="nowrap">
-                  <Stack gap={2}>
-                    <Text size="sm" fw={500}>
-                      {d.reason}
-                    </Text>
-                    <Text size="xs" c="dimmed">
-                      By {d.authorized_by_user?.full_name || '-'} •{' '}
-                      {formatDateTime(d.authorized_at)}
-                    </Text>
-                  </Stack>
-                  <Text c="red.7" fw={600} ff="monospace" size="sm">
-                    -{formatCurrency(d.amount)}
+          {b.discounts.map((d, i) => (
+            <Row key={d.id} last={i === b.discounts!.length - 1}>
+              <Group justify="space-between" align="flex-start" wrap="nowrap" gap="sm">
+                <Box style={{ minWidth: 0 }}>
+                  <Text size="sm" fw={500}>
+                    {d.reason}
                   </Text>
-                </Group>
-              </Box>
-            ))}
-          </Stack>
+                  <Text size="xs" c="dimmed">
+                    By {d.authorized_by_user?.full_name || '-'} · {formatDateTime(d.authorized_at)}
+                  </Text>
+                </Box>
+                <Text size="sm" fw={700} style={{ whiteSpace: 'nowrap', color: C.red }}>
+                  −{formatCurrency(d.amount)}
+                </Text>
+              </Group>
+            </Row>
+          ))}
         </SectionCard>
       )}
 
-      {/* ---------------- Payment ---------------- */}
+      {/* Payment */}
       {b.payment && (
-        <SectionCard
-          icon={<CreditCard size={15} />}
-          title="Payment"
-          right={<StatBadge value={b.payment.status} />}
-          noPadding
-        >
-          {/* Meta row */}
-          <Group
-            justify="space-between"
-            px="lg"
-            py="sm"
-            style={{
-              background: 'var(--mantine-color-gray-0)',
-              borderBottom: '1px solid var(--mantine-color-gray-2)',
-            }}
-          >
-            <Text
-              size="xs"
-              c="dimmed"
-              fw={600}
-              tt="uppercase"
-              style={{ letterSpacing: 0.6 }}
-            >
-              Payment Ref
+        <SectionCard icon={<CreditCard size={15} />} title="Payment" right={<StatBadge value={b.payment.status} />}>
+          <Group justify="space-between" px="md" py={8} style={{ background: '#F8F9FA', borderBottom: `1px solid ${C.line}` }}>
+            <Text size="xs" c="dimmed" fw={600}>
+              Payment ref
             </Text>
-            <Text size="sm" fw={600} ff="monospace">
+            <Text size="xs" fw={600}>
               {b.payment.payment_ref}
             </Text>
           </Group>
-
-          <Table
-            horizontalSpacing="lg"
-            verticalSpacing="sm"
-            highlightOnHover
-            highlightOnHoverColor="var(--mantine-color-gray-0)"
-            styles={{
-              th: {
-                background: 'var(--mantine-color-gray-0)',
-                color: 'var(--mantine-color-gray-6)',
-                fontWeight: 600,
-                fontSize: 11,
-                letterSpacing: 0.6,
-                textTransform: 'uppercase',
-                borderBottom: '1px solid var(--mantine-color-gray-2)',
-              },
-              td: {
-                borderBottom: '1px solid var(--mantine-color-gray-1)',
-                fontSize: 13.5,
-              },
-              tr: {
-                '&:last-of-type td': { borderBottom: 'none' },
-              },
-            }}
-          >
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Method</Table.Th>
-                <Table.Th>Reference</Table.Th>
-                <Table.Th>Status</Table.Th>
-                <Table.Th style={{ textAlign: 'right' }}>Amount</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {b.payment.payment_lines?.map((pl) => (
-                <Table.Tr key={pl.id}>
-                  <Table.Td>
+          {b.payment_state === 'awaiting_verification' && (
+            <Text size="xs" px="md" py={8} style={{ background: '#FFF4E6', color: '#D9480F' }}>
+              Paid, but not yet confirmed. Cash is confirmed when the cashier confirms the waiter's cash drop; M-Pesa and card when
+              the cashier verifies them.
+            </Text>
+          )}
+          {(b.payment.payment_lines ?? []).map((pl, i, all) => (
+            <Row key={pl.id} last={i === all.length - 1}>
+              <Group justify="space-between" align="center" wrap="nowrap" gap="sm">
+                <Stack gap={4} style={{ minWidth: 0 }}>
+                  <Group gap={6} wrap="wrap">
                     <StatBadge value={pl.method} />
-                  </Table.Td>
-                  <Table.Td>
-                    <Text
-                      size="sm"
-                      c={pl.transaction_ref ? undefined : 'dimmed'}
-                      ff="monospace"
-                    >
-                      {pl.transaction_ref || '-'}
-                    </Text>
-                  </Table.Td>
-                  <Table.Td>
                     <StatBadge value={pl.verification_status} />
-                  </Table.Td>
-                  <Table.Td style={{ textAlign: 'right' }}>
-                    <Text size="sm" fw={600} ff="monospace">
-                      {formatCurrency(pl.amount)}
+                  </Group>
+                  {pl.transaction_ref && (
+                    <Text size="xs" c="dimmed">
+                      Ref {pl.transaction_ref}
                     </Text>
-                  </Table.Td>
-                </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
+                  )}
+                </Stack>
+                <Text size="sm" fw={700} style={{ whiteSpace: 'nowrap', color: C.navy }}>
+                  {formatCurrency(pl.amount)}
+                </Text>
+              </Group>
+            </Row>
+          ))}
         </SectionCard>
       )}
 
-      <ApplyDiscountModal
-        opened={discountOpen}
-        onClose={closeDiscount}
-        billId={id}
-        maxAmount={parseFloat(b.net_total)}
-      />
+      <Divider my="xs" color="transparent" />
 
+      <ApplyDiscountModal opened={discountOpen} onClose={closeDiscount} billId={id} maxAmount={parseFloat(b.net_total)} />
       <RecordPaymentModal
         opened={paymentOpen}
         onClose={closePayment}

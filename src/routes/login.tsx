@@ -1,17 +1,18 @@
 import { createFileRoute } from '@tanstack/react-router';
 import {
+  Badge,
+  Box,
   Button,
-  Container,
+  Group,
   Paper,
   PasswordInput,
+  SimpleGrid,
   Stack,
   Text,
   TextInput,
-  Title,
-  Box,
-  Group,
   ThemeIcon,
-  Badge,
+  Title,
+  UnstyledButton,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
@@ -22,13 +23,25 @@ export const Route = createFileRoute('/login')({
   component: LoginPage,
 });
 
-const DEMO_CREDENTIALS = [
-  { username: 'john.w', password: 'password123' },
-  { username: 'alice.c', password: 'password123' },
-  { username: 'peter.s', password: 'password123' },
-  { username: 'james.b', password: 'password123' },
-  { username: 'david.m', password: 'password123' },
-  { username: 'md', password: 'password123' },
+const C = {
+  navy: '#1F3A5F',
+  bg: '#F4F6F9',
+  line: '#E9ECEF',
+  muted: '#868E96',
+  amber: '#E67700',
+  amberBg: '#FFF9DB',
+};
+
+// Seeded test accounts. Shown only in `pnpm dev`, never in a production build.
+const DEV_PASSWORD = 'password123';
+const DEV_ACCOUNTS = [
+  { username: 'john.w', role: 'Waiter' },
+  { username: 'mary.w', role: 'Waiter' },
+  { username: 'james.b', role: 'Bar' },
+  { username: 'alice.c', role: 'Cashier' },
+  { username: 'peter.s', role: 'Store' },
+  { username: 'david.m', role: 'Manager' },
+  { username: 'md', role: 'MD' },
 ];
 
 function LoginPage() {
@@ -36,10 +49,7 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   const form = useForm({
-    initialValues: {
-      username: '',
-      password: '',
-    },
+    initialValues: { username: '', password: '' },
     validate: {
       username: (v) => (v ? null : 'Username is required'),
       password: (v) => (v ? null : 'Password is required'),
@@ -49,130 +59,146 @@ function LoginPage() {
   const handleSubmit = async (values: typeof form.values) => {
     setLoading(true);
     try {
-      await auth.login(values.username, values.password);
+      await auth.login(values.username.trim(), values.password);
       window.location.replace('/dashboard');
     } catch (err) {
-      notifications.show({
-        color: 'red',
-        title: 'Login failed',
-        message: getErrorMessage(err),
-      });
+      notifications.show({ color: 'red', title: 'Login failed', message: getErrorMessage(err) });
       setLoading(false);
     }
+  };
+
+  const pickAccount = (username: string) => {
+    form.setValues({ username, password: DEV_PASSWORD });
+    form.clearErrors();
   };
 
   return (
     <Box
       style={{
-        minHeight: '100vh',
+        minHeight: '100dvh',
         display: 'flex',
-        alignItems: 'center',
+        flexDirection: 'column',
         justifyContent: 'center',
-        background: '#f8f9fa',
+        background: C.bg,
+        padding: '24px 16px calc(24px + env(safe-area-inset-bottom))',
       }}
     >
-      <Container size="lg" w="100%" px="md">
-        <Group align="flex-start" justify="center" gap="xl" wrap="nowrap">
-          {/* Login form */}
-          <Stack align="center" gap={8} w={400}>
-            {/* Brand */}
-            <Stack align="center" gap={8} mb={32}>
-              <ThemeIcon size={44} radius="md" variant="light" color="blue">
-                <svg
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                  <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-                  <line x1="12" y1="22.08" x2="12" y2="12" />
-                </svg>
-              </ThemeIcon>
-              <Title order={3} fw={600} style={{ letterSpacing: '-0.01em' }}>
-                Straight Group
-              </Title>
-              <Text size="sm" c="dimmed">
-                Inventory Tracking System
-              </Text>
+      <Box w="100%" maw={400} mx="auto">
+        {/* Brand */}
+        <Stack align="center" gap={6} mb={24}>
+          <ThemeIcon size={48} radius="md" style={{ backgroundColor: C.navy }}>
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#FFFFFF"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+              <line x1="12" y1="22.08" x2="12" y2="12" />
+            </svg>
+          </ThemeIcon>
+          <Title order={3} fw={700} style={{ color: C.navy, letterSpacing: '-0.01em' }}>
+            Straight Group
+          </Title>
+          <Text size="sm" c="dimmed">
+            Sign in to Straight Inventory
+          </Text>
+        </Stack>
+
+        {/* Sign-in card */}
+        <Paper withBorder radius="lg" p={{ base: 'lg', sm: 'xl' }} shadow="xs" style={{ borderColor: C.line }}>
+          <form onSubmit={form.onSubmit(handleSubmit)}>
+            <Stack gap="md">
+              <TextInput
+                label="Username"
+                placeholder="e.g. john.w"
+                size="md"
+                radius="md"
+                autoComplete="username"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                {...form.getInputProps('username')}
+              />
+              <PasswordInput
+                label="Password"
+                placeholder="Your password"
+                size="md"
+                radius="md"
+                autoComplete="current-password"
+                {...form.getInputProps('password')}
+              />
+              <Button
+                type="submit"
+                loading={loading}
+                fullWidth
+                size="md"
+                radius="md"
+                mt={4}
+                style={{ backgroundColor: C.navy }}
+              >
+                Sign in
+              </Button>
             </Stack>
+          </form>
+        </Paper>
 
-            {/* Card */}
-            <Paper withBorder radius="md" p="xl" shadow="xs" w="100%">
-              <form onSubmit={form.onSubmit(handleSubmit)}>
-                <Stack gap="md">
-                  <TextInput
-                    label="Username"
-                    placeholder="e.g. john.w"
-                    required
-                    size="md"
-                    radius="md"
-                    {...form.getInputProps('username')}
-                  />
-                  <PasswordInput
-                    label="Password"
-                    placeholder="Your password"
-                    required
-                    size="md"
-                    radius="md"
-                    {...form.getInputProps('password')}
-                  />
-                  <Button
-                    type="submit"
-                    loading={loading}
-                    fullWidth
-                    size="md"
-                    radius="md"
-                    mt="xs"
-                  >
-                    Sign in
-                  </Button>
-                </Stack>
-              </form>
-            </Paper>
-          </Stack>
-
-          {/* Demo credentials */}
+        {/* Dev only: tap an account to fill the form */}
+        {import.meta.env.DEV && (
           <Paper
-            withBorder
-            radius="md"
-            p="lg"
-            shadow="xs"
-            w={280}
-            style={{ marginTop: 100 }}
+            radius="lg"
+            p="md"
+            mt="md"
+            style={{ border: `1px dashed ${C.amber}`, backgroundColor: C.amberBg }}
           >
-            <Group justify="space-between" mb="md">
-              <Text size="sm" fw={600}>
-                Demo Credentials
+            <Group justify="space-between" mb={10} wrap="nowrap">
+              <Text size="xs" fw={700} tt="uppercase" style={{ color: C.amber, letterSpacing: 0.4 }}>
+                Test accounts
               </Text>
-              <Badge color="orange" variant="light" size="sm">
+              <Badge size="xs" variant="outline" style={{ color: C.amber, borderColor: C.amber }}>
                 Dev only
               </Badge>
             </Group>
-
-            <Text size="xs" c="dimmed" mb="md">
-              These accounts will be removed in production.
+            <SimpleGrid cols={2} spacing={8} verticalSpacing={8}>
+              {DEV_ACCOUNTS.map((a) => {
+                const active = form.values.username === a.username;
+                return (
+                  <UnstyledButton
+                    key={a.username}
+                    onClick={() => pickAccount(a.username)}
+                    style={{
+                      backgroundColor: '#FFFFFF',
+                      border: `1px solid ${active ? C.navy : C.line}`,
+                      borderRadius: 8,
+                      padding: '8px 10px',
+                      minWidth: 0,
+                    }}
+                  >
+                    <Text size="sm" fw={600} truncate style={{ color: C.navy }}>
+                      {a.username}
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      {a.role}
+                    </Text>
+                  </UnstyledButton>
+                );
+              })}
+            </SimpleGrid>
+            <Text size="xs" mt={10} style={{ color: C.muted }}>
+              Password for all: <b>{DEV_PASSWORD}</b>. Tap one, then Sign in.
             </Text>
-
-            <Stack gap="xs">
-              {DEMO_CREDENTIALS.map((cred) => (
-                <Group key={cred.username} justify="space-between" gap="xs">
-                  <Text size="xs" ff="monospace" c="dimmed">
-                    {cred.username}
-                  </Text>
-                  <Text size="xs" ff="monospace" c="dimmed">
-                    {cred.password}
-                  </Text>
-                </Group>
-              ))}
-            </Stack>
           </Paper>
-        </Group>
-      </Container>
+        )}
+
+        <Text size="xs" ta="center" mt="lg" style={{ color: C.muted }}>
+          Mums' Garden · Centurion
+        </Text>
+      </Box>
     </Box>
   );
 }
