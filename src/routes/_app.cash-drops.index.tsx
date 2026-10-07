@@ -183,7 +183,7 @@
 
 
 
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { Button, Group, Text, Stack, Card, Box, Badge } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Check, Plus, X } from 'lucide-react';
@@ -191,6 +191,7 @@ import { useState } from 'react';
 import { useAuth } from '@/lib/auth/useAuth';
 import { useCashDrops } from '@/hooks/usePayments';
 import { PageHeader } from '@/components/PageHeader';
+import { DayGroupedList } from '@/components/DayGroupedList';
 import { DataTable, Column } from '@/components/DataTable';
 import { StatBadge } from '@/components/StatBadge';
 import { RecordCashDropModal } from '@/components/payments/RecordCashDropModal';
@@ -198,6 +199,20 @@ import { ConfirmCashDropModal } from '@/components/payments/ConfirmCashDropModal
 import { RejectCashDropModal } from '@/components/payments/RejectCashDropModal';
 import { CashDrop } from '@/lib/api/payments';
 import { formatCurrency, formatDateTime } from '@/lib/utils/format';
+import { getErrorMessage } from '@/lib/api/client';
+import { ListToolbar, emptyToolbar, toolbarParams } from '@/components/ListToolbar';
+
+const STATUS_OPTIONS = [
+  { value: 'pending', label: 'Waiting for cashier' },
+  { value: 'verified', label: 'Confirmed' },
+  { value: 'rejected', label: 'Rejected' },
+  { value: 'disputed', label: 'Disputed' },
+];
+const ROLE_LABEL: Record<string, string> = { cashier: 'Cashier', supervisor: 'Supervisor', manager: 'Manager' };
+const receiverText = (r: CashDrop) =>
+  r.receiver?.full_name
+    ? `${r.receiver.full_name}${r.receiver_role ? ` · as ${ROLE_LABEL[r.receiver_role] || r.receiver_role}` : ''}`
+    : 'Not yet confirmed';
 
 export const Route = createFileRoute('/_app/cash-drops/')({
   component: CashDropsPage,
@@ -214,7 +229,11 @@ function CashDropsPage() {
     useDisclosure(false);
   const [selected, setSelected] = useState<CashDrop | null>(null);
 
-  const query = useCashDrops({ page, limit: 20 });
+  const navigate = useNavigate();
+  const [filters, setFilters] = useState(emptyToolbar());
+  const query = useCashDrops({ page, limit: 20, ...toolbarParams(filters) });
+  const error = query.error ? getErrorMessage(query.error) : null;
+  const meta = query.data?.meta;
 
   const canDrop = auth.hasPermission('cash.drop');
   const canVerify = auth.hasPermission('cash.drop.verify');
@@ -249,15 +268,16 @@ function CashDropsPage() {
     {
       key: 'dropped_at',
       header: 'Dropped',
-      render: (r) => formatDateTime(r.dropped_at),
+      render: (r) => <Text size="sm" style={{ whiteSpace: 'nowrap' }}>{formatDateTime(r.dropped_at)}</Text>,
     },
     {
       key: 'receiver',
       header: 'Received By',
-      render: (r) =>
-        r.receiver?.full_name
-          ? `${r.receiver.full_name} (${r.receiver_role || ''})`
-          : '-',
+      render: (r) => (
+        <Text size="sm" c={r.receiver?.full_name ? undefined : 'dimmed'}>
+          {receiverText(r)}
+        </Text>
+      ),
     },
     {
       key: 'status',
@@ -271,7 +291,7 @@ function CashDropsPage() {
       render: (r) => {
         if (r.status === 'pending' && canVerify && r.waiter_id !== auth.user?.id) {
           return (
-            <Group gap="xs" justify="flex-end">
+            <Group gap="xs" justify="flex-end" wrap="nowrap" onClick={(e) => e.stopPropagation()}>
               <Button
                 size="compact-sm"
                 color="green"
@@ -351,9 +371,7 @@ function CashDropsPage() {
             Received By
           </Text>
           <Text size="sm" ta="right">
-            {r.receiver?.full_name
-              ? `${r.receiver.full_name} (${r.receiver_role || ''})`
-              : '-'}
+            {receiverText(r)}
           </Text>
         </Group>
 
@@ -394,7 +412,11 @@ function CashDropsPage() {
     <>
       <PageHeader
         title="Cash Drops"
-        subtitle="Immediate cash handovers - waiters record, cashiers verify"
+        subtitle={
+          meta
+            ? `${meta.total} drop${meta.total === 1 ? '' : 's'} · waiters record, cashiers confirm`
+            : 'Waiters record cash handed in, cashiers confirm it'
+        }
         actions={
           canDrop ? (
             <Button leftSection={<Plus size={16} />} onClick={openCreate}>
@@ -404,6 +426,16 @@ function CashDropsPage() {
         }
       />
 
+      <ListToolbar
+        value={filters}
+        onChange={(v) => {
+          setFilters(v);
+          setPage(1);
+        }}
+        placeholder="Search drop ref or waiter"
+        statusOptions={STATUS_OPTIONS}
+      />
+
       {/* Mobile view */}
       <Box hiddenFrom="sm">
         {query.isLoading && (
@@ -411,15 +443,22 @@ function CashDropsPage() {
             Loading...
           </Text>
         )}
-        {query.error && (
-          <Text c="red" ta="center" py="xl">
-            Failed to load cash drops
-          </Text>
+        {error && (
+          <Stack align="center" py="xl" gap={4}>
+            <Text fw={600}>Couldn't load cash drops</Text>
+            <Text size="sm" c="dimmed">{error}</Text>
+            <Button size="xs" variant="light" onClick={() => query.refetch()}>Try again</Button>
+          </Stack>
         )}
         {!query.isLoading && !query.error && (
           <Stack gap="sm">
             {query.data?.data?.length ? (
-              query.data.data.map(renderMobileCard)
+              <DayGroupedList
+                items={query.data.data}
+                getDate={(d) => d.dropped_at}
+                keyOf={(d) => d.id}
+                render={renderMobileCard}
+              />
             ) : (
               <Stack align="center" py="xl" gap="xs">
                 <Text fw={500}>No cash drops</Text>
@@ -430,6 +469,17 @@ function CashDropsPage() {
             )}
           </Stack>
         )}
+        {meta && meta.pages > 1 && (
+          <Group justify="space-between" mt="md">
+            <Button variant="default" size="sm" disabled={meta.page <= 1} onClick={() => setPage(meta.page - 1)}>
+              Previous
+            </Button>
+            <Text size="xs" c="dimmed">Page {meta.page} of {meta.pages}</Text>
+            <Button variant="default" size="sm" disabled={meta.page >= meta.pages} onClick={() => setPage(meta.page + 1)}>
+              Next
+            </Button>
+          </Group>
+        )}
       </Box>
 
       {/* Desktop view */}
@@ -438,8 +488,10 @@ function CashDropsPage() {
           data={query.data?.data ?? []}
           columns={columns}
           loading={query.isLoading}
-          error={query.error ? 'Failed to load cash drops' : null}
+          error={error}
+          onRetry={() => query.refetch()}
           rowKey={(r) => r.id}
+          onRowClick={(r) => navigate({ to: '/cash-drops/$id', params: { id: r.id } })}
           meta={query.data?.meta}
           onPageChange={setPage}
           emptyTitle="No cash drops"

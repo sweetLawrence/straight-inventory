@@ -1,4 +1,4 @@
-import { Alert, Box, Button, Card, Group, Loader, SegmentedControl, SimpleGrid, Stack, Table, Text, Title } from '@mantine/core';
+import { ActionIcon, Alert, Box, Card, Group, Loader, SegmentedControl, SimpleGrid, Stack, Text } from '@mantine/core';
 import { useState } from 'react';
 import dayjs from 'dayjs';
 import { Info, RotateCw } from 'lucide-react';
@@ -16,11 +16,21 @@ const METHODS = [
   { key: 'other', label: 'Other' },
 ] as const;
 
-const C = { navy: '#1F3A5F', orange: '#E8590C', red: '#E03131', muted: '#868E96' };
+const C = {
+  navy: '#1F3A5F',
+  orange: '#E8590C',
+  orangeBg: '#FFF4E6',
+  green: '#2B8A3E',
+  greenBg: '#EBFBEE',
+  red: '#E03131',
+  muted: '#868E96',
+  line: '#F1F3F5',
+};
 
 /**
  * One handover screen for waiters (their own bills) and the bar (the whole bar's
- * takings this shift). Same cards, same columns, same wording on both.
+ * takings this shift). Built phone first: the one number that matters, cash still
+ * to drop, sits at the top; everything else is a short list underneath.
  */
 export function HandoverView({ title }: { title: string }) {
   const auth = useAuth();
@@ -28,25 +38,40 @@ export function HandoverView({ title }: { title: string }) {
   const groupLevel = auth.hasRole('md', 'admin');
   const [which, setWhich] = useState<'current' | 'previous'>('current');
   const query = useCurrentHandover(!groupLevel, which);
+
   // Switch between the live shift and the one before it (e.g. last night after the 06:00 roll-over)
-  const shiftPicker = (
-    <SegmentedControl
-      size="xs"
-      value={which}
-      onChange={(v) => setWhich(v as 'current' | 'previous')}
-      data={[
-        { value: 'current', label: 'This shift' },
-        { value: 'previous', label: 'Previous shift' },
-      ]}
-    />
+  const controls = (
+    <Group gap="xs" wrap="nowrap" mb="md">
+      <SegmentedControl
+        fullWidth
+        style={{ flex: 1, maxWidth: 360 }}
+        value={which}
+        onChange={(v) => setWhich(v as 'current' | 'previous')}
+        data={[
+          { value: 'current', label: 'This shift' },
+          { value: 'previous', label: 'Previous shift' },
+        ]}
+      />
+      <ActionIcon
+        variant="default"
+        size={36}
+        radius="md"
+        aria-label="Refresh"
+        loading={query.isFetching}
+        onClick={() => query.refetch()}
+      >
+        <RotateCw size={16} />
+      </ActionIcon>
+    </Group>
   );
+
   if (groupLevel) {
     return (
       <>
         <PageHeader title={title} subtitle="Per waiter and shift" />
         <EmptyState
           title="Handovers are per waiter"
-          description="Each waiter and the bar see their own handover for the current shift. For every waiter across both properties, open Reports → Sales and collections by waiter."
+          description="Each waiter and the bar see their own handover for the current shift. For every waiter across both properties, open Reports, Sales and collections by waiter."
         />
       </>
     );
@@ -62,24 +87,39 @@ export function HandoverView({ title }: { title: string }) {
 
   if (query.error || !query.data) {
     return (
-      <Stack align="center" py="xl" gap="sm">
-        {shiftPicker}
+      <>
+        <PageHeader title={title} />
+        {controls}
         <EmptyState title="Handover unavailable" description={getErrorMessage(query.error)} />
-        <Button variant="light" leftSection={<RotateCw size={14} />} onClick={() => query.refetch()}>
-          Try again
-        </Button>
-      </Stack>
+      </>
     );
   }
 
   const h = query.data;
+  if (h.no_previous) {
+    return (
+      <>
+        <PageHeader title={title} subtitle="Previous shift" />
+        {controls}
+        <EmptyState
+          title="No earlier shift yet"
+          description="The previous shift shows here once a manager has started a new shift. Your figures so far are under This shift."
+        />
+      </>
+    );
+  }
   const isBar = h.scope === 'outlet';
   const live = which === 'current';
   const shiftText = h.shift
     ? live
       ? `${h.shift.name} · since ${dayjs(h.shift.opened_at).format('ddd D MMM, HH:mm')}`
-      : `${h.shift.name} · ${dayjs(h.shift.opened_at).format('ddd D MMM, HH:mm')}–${h.shift.closed_at ? dayjs(h.shift.closed_at).format('HH:mm') : 'now'}`
+      : `${h.shift.name} · ${dayjs(h.shift.opened_at).format('ddd D MMM, HH:mm')} to ${
+          h.shift.closed_at ? dayjs(h.shift.closed_at).format('HH:mm') : 'now'
+        }`
     : 'Current shift';
+
+  const cashTaken = Number(h.totals_by_method?.cash || 0);
+  const pending = Number(h.cash_pending || 0);
   const nothingYet =
     h.total_bills_count === 0 &&
     Object.values(h.totals_by_method || {}).every((v) => !Number(v)) &&
@@ -87,96 +127,84 @@ export function HandoverView({ title }: { title: string }) {
     !Number(h.float_issued) &&
     !Number(h.float_returned);
 
+  // Only the methods actually used this shift
+  const used = METHODS.filter(({ key }) => {
+    const st = h.status_by_method[key];
+    const count = st ? st.pending + st.verified + st.unverified + st.failed : 0;
+    return Number(h.totals_by_method[key]) > 0 || count > 0;
+  });
+
   return (
     <>
-      <PageHeader
-        title={title}
-        subtitle={`${shiftText} · ${isBar ? "the whole bar's takings" : 'your bills, payments and cash'}`}
-        actions={
-          <Group gap="xs">
-            {shiftPicker}
-            <Text size="xs" c="dimmed">
-              As of {dayjs(h.as_of || undefined).format('HH:mm')}
-            </Text>
-            <Button
-              size="xs"
-              variant="default"
-              leftSection={<RotateCw size={14} />}
-              loading={query.isFetching}
-              onClick={() => query.refetch()}
-            >
-              Refresh
-            </Button>
-          </Group>
-        }
-      />
+      <PageHeader title={title} subtitle={`${shiftText} · ${isBar ? "the whole bar's takings" : 'your bills and cash'}`} />
+      {controls}
 
       {nothingYet && (
-        <Alert color="blue" variant="light" icon={<Info size={16} />} mb="lg">
+        <Alert color="blue" variant="light" icon={<Info size={16} />} mb="md">
           {live
-            ? `Nothing recorded yet in this shift (${h.shift?.name || 'current shift'} started ${dayjs(h.shift?.opened_at).format('HH:mm')}). Figures appear as soon as you bill, take payment or drop cash. Earlier work is under Previous shift.`
+            ? `Nothing recorded yet in this shift (started ${dayjs(h.shift?.opened_at).format('HH:mm')}). Figures appear as soon as you bill, take payment or drop cash. Earlier work is under Previous shift.`
             : 'Nothing was recorded in the previous shift.'}
         </Alert>
       )}
 
-      <SimpleGrid cols={{ base: 2, lg: 4 }} mb="lg">
-        <Card withBorder>
-          <Text size="sm" c="dimmed">
+      {/* The number that matters */}
+      <Card
+        withBorder
+        radius="md"
+        mb="sm"
+        style={{ backgroundColor: pending > 0 ? C.orangeBg : C.greenBg, borderColor: pending > 0 ? '#FFD8A8' : '#B2F2BB' }}
+      >
+        <Text size="xs" fw={700} tt="uppercase" style={{ color: pending > 0 ? C.orange : C.green, letterSpacing: 0.4 }}>
+          Cash still to drop
+        </Text>
+        <Text fw={800} fz={30} lh={1.15} style={{ color: pending > 0 ? C.orange : C.green }}>
+          {formatCurrency(pending)}
+        </Text>
+        <Text size="xs" mt={4} style={{ color: '#495057' }}>
+          Cash taken {formatCurrency(cashTaken)} · dropped {formatCurrency(h.cash_dropped)} ({h.drops_count} drop
+          {h.drops_count === 1 ? '' : 's'})
+        </Text>
+      </Card>
+
+      <SimpleGrid cols={2} spacing="sm" mb="sm">
+        <Card withBorder radius="md" p="sm">
+          <Text size="xs" c="dimmed">
             Bills
           </Text>
-          <Text fw={700} size="lg" style={{ color: C.navy }}>
+          <Text fw={700} fz={20} style={{ color: C.navy }}>
             {h.total_bills_count}
           </Text>
-          <Text size="xs" c="dimmed" mt={4}>
-            {formatCurrency(h.total_bills)} total
+          <Text size="xs" c="dimmed">
+            {formatCurrency(h.total_bills)}
           </Text>
         </Card>
-        <Card withBorder>
-          <Text size="sm" c="dimmed">
-            Cash dropped
+        <Card withBorder radius="md" p="sm">
+          <Text size="xs" c="dimmed">
+            Float held
           </Text>
-          <Text fw={700} size="lg" style={{ color: C.navy }}>
-            {formatCurrency(h.cash_dropped)}
-          </Text>
-          <Text size="xs" c="dimmed" mt={4}>
-            {h.drops_count} drop{h.drops_count === 1 ? '' : 's'}
-          </Text>
-        </Card>
-        <Card withBorder>
-          <Text size="sm" c="dimmed">
-            Cash still to drop
-          </Text>
-          <Text fw={700} size="lg" style={{ color: h.cash_pending > 0 ? C.orange : C.muted }}>
-            {formatCurrency(h.cash_pending)}
-          </Text>
-          <Text size="xs" c="dimmed" mt={4}>
-            Cash taken minus cash dropped
-          </Text>
-        </Card>
-        <Card withBorder>
-          <Text size="sm" c="dimmed">
-            Float net
-          </Text>
-          <Text fw={700} size="lg" style={{ color: C.navy }}>
+          <Text fw={700} fz={20} style={{ color: C.navy }}>
             {formatCurrency(h.float_net)}
           </Text>
-          <Text size="xs" c="dimmed" mt={4}>
-            Issued {formatCurrency(h.float_issued)} · Returned {formatCurrency(h.float_returned)}
+          <Text size="xs" c="dimmed">
+            In {formatCurrency(h.float_issued)} · back {formatCurrency(h.float_returned)}
           </Text>
         </Card>
       </SimpleGrid>
 
-      <Card withBorder mb="lg">
-        <Title order={4} mb="sm">
-          By method
-        </Title>
-        {/* Phones: one row per method */}
-        <Stack gap={0} hiddenFrom="sm">
-          {METHODS.map(({ key, label }, i) => {
+      <Card withBorder radius="md" p={0} mb="sm">
+        <Text fw={600} size="sm" px="md" py="sm" style={{ borderBottom: `1px solid ${C.line}` }}>
+          Payments by method
+        </Text>
+        {used.length === 0 ? (
+          <Text size="sm" c="dimmed" px="md" py="sm">
+            No payments yet
+          </Text>
+        ) : (
+          used.map(({ key, label }, i) => {
             const st = h.status_by_method[key] || { pending: 0, verified: 0, unverified: 0, failed: 0 };
             const parts = [
               st.pending ? { n: st.pending, t: 'waiting', c: C.orange } : null,
-              st.verified ? { n: st.verified, t: 'verified', c: C.muted } : null,
+              st.verified ? { n: st.verified, t: 'checked', c: C.green } : null,
               st.unverified ? { n: st.unverified, t: 'not matched', c: C.orange } : null,
               st.failed ? { n: st.failed, t: 'failed', c: C.red } : null,
             ].filter(Boolean) as { n: number; t: string; c: string }[];
@@ -185,77 +213,36 @@ export function HandoverView({ title }: { title: string }) {
                 key={key}
                 justify="space-between"
                 wrap="nowrap"
-                py={8}
-                style={{ borderTop: i ? '1px solid #F1F3F5' : undefined }}
+                px="md"
+                py={10}
+                style={{ borderTop: i ? `1px solid ${C.line}` : undefined }}
               >
-                <Box>
+                <Box style={{ minWidth: 0 }}>
                   <Text fw={500} size="sm">
                     {label}
                   </Text>
-                  <Text size="xs" c="dimmed">
-                    {parts.length
-                      ? parts.map((p, j) => (
-                          <span key={p.t} style={{ color: p.c }}>
-                            {j ? ' · ' : ''}
-                            {p.n} {p.t}
-                          </span>
-                        ))
-                      : 'No payments'}
+                  <Text size="xs">
+                    {parts.map((p, j) => (
+                      <span key={p.t} style={{ color: p.c }}>
+                        {j ? ' · ' : ''}
+                        {p.n} {p.t}
+                      </span>
+                    ))}
                   </Text>
                 </Box>
-                <Text fw={600} size="sm" style={{ whiteSpace: 'nowrap' }}>
+                <Text fw={700} size="sm" style={{ whiteSpace: 'nowrap', color: C.navy }}>
                   {formatCurrency(h.totals_by_method[key])}
                 </Text>
               </Group>
             );
-          })}
-        </Stack>
-        <Table.ScrollContainer minWidth={560} visibleFrom="sm">
-          <Table>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Method</Table.Th>
-                <Table.Th style={{ textAlign: 'right' }}>Amount</Table.Th>
-                <Table.Th style={{ textAlign: 'right' }}>Waiting</Table.Th>
-                <Table.Th style={{ textAlign: 'right' }}>Verified</Table.Th>
-                <Table.Th style={{ textAlign: 'right' }}>Not matched</Table.Th>
-                <Table.Th style={{ textAlign: 'right' }}>Failed</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {METHODS.map(({ key, label }) => {
-                const st = h.status_by_method[key] || { pending: 0, verified: 0, unverified: 0, failed: 0 };
-                const cell = (n: number, color?: string) => (
-                  <Table.Td style={{ textAlign: 'right', color: n ? color : C.muted }}>{n || 0}</Table.Td>
-                );
-                return (
-                  <Table.Tr key={key}>
-                    <Table.Td>
-                      <Text fw={500}>{label}</Text>
-                    </Table.Td>
-                    <Table.Td style={{ textAlign: 'right' }}>{formatCurrency(h.totals_by_method[key])}</Table.Td>
-                    {cell(st.pending, C.orange)}
-                    {cell(st.verified)}
-                    {cell(st.unverified, C.orange)}
-                    {cell(st.failed, C.red)}
-                  </Table.Tr>
-                );
-              })}
-            </Table.Tbody>
-          </Table>
-        </Table.ScrollContainer>
-        <Text size="xs" c="dimmed" mt="xs">
-          Counts are payment lines. Waiting = not yet checked by the cashier (cash is checked when the cash drop is
-          confirmed). Not matched = checked but the amount or reference did not match. Failed = money not received.
-        </Text>
+          })
+        )}
       </Card>
 
-      <Alert icon={<Info size={16} />} color="blue" variant="light">
-        <Text size="sm">
-          These figures are for {isBar ? 'all bar sales' : 'your bills'} in this shift and update as the cashier
-          checks payments and confirms drops. A new shift starts from zero.
-        </Text>
-      </Alert>
+      <Text size="xs" c="dimmed" px={2}>
+        Waiting means the cashier has not checked it yet. Cash is checked when your cash drop is confirmed. Updated{' '}
+        {dayjs(h.as_of || undefined).format('HH:mm')}. {isBar ? 'Covers all bar sales in this shift.' : 'A new shift starts from zero.'}
+      </Text>
     </>
   );
 }

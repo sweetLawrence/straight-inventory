@@ -24,6 +24,7 @@ import {
 import { useState } from 'react'
 import { usePayments } from '@/hooks/usePayments'
 import { PageHeader } from '@/components/PageHeader'
+import { DayGroupedList } from '@/components/DayGroupedList'
 import { DataTable, Column } from '@/components/DataTable'
 import { StatBadge } from '@/components/StatBadge'
 import { Payment } from '@/lib/api/payments'
@@ -369,11 +370,12 @@ function MobilePaymentList ({
 
   return (
     <>
-      <Stack gap='sm'>
-        {payments.map(payment => (
-          <PaymentCard key={payment.id} payment={payment} />
-        ))}
-      </Stack>
+      <DayGroupedList
+        items={payments}
+        getDate={p => p.created_at}
+        keyOf={p => p.id}
+        render={payment => <PaymentCard payment={payment} />}
+      />
 
       {totalPages > 1 && (
         <Group justify='space-between' mt='md' px={4}>

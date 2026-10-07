@@ -71,6 +71,7 @@ function FloatPage() {
         loading={query.isLoading}
         error={query.error ? getErrorMessage(query.error, 'Failed to load float') : null}
         rowKey={(r) => r.id}
+        groupByDate={(r) => r.recorded_at}
         meta={query.data?.meta}
         onPageChange={setPage}
         emptyTitle="No float entries"

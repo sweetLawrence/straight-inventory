@@ -1,11 +1,28 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { Box, Button, Card, Group, Stack, Text, UnstyledButton } from '@mantine/core'
-import { ChevronRight, Clock, Hash, User } from 'lucide-react'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import {
+  ActionIcon,
+  Box,
+  Button,
+  Card,
+  Group,
+  Stack,
+  Text,
+  Tooltip,
+  UnstyledButton
+} from '@mantine/core'
+import { Banknote, ChevronRight, Clock, Hash, Printer, User } from 'lucide-react'
 import { useState } from 'react'
 import { useBills } from '@/hooks/useOrders'
 import { PageHeader } from '@/components/PageHeader'
+import { DayGroupedList } from '@/components/DayGroupedList'
 import { DataTable, Column } from '@/components/DataTable'
 import { StatBadge } from '@/components/StatBadge'
+import { BillStatusBadge } from '@/components/orders/BillStatusBadge'
+import { ListToolbar, emptyToolbar, toolbarParams } from '@/components/ListToolbar'
+import { RecordPaymentModal } from '@/components/payments/RecordPaymentModal'
+import { useAuth } from '@/lib/auth/useAuth'
+import { getErrorMessage } from '@/lib/api/client'
+import dayjs from 'dayjs'
 import { Bill } from '@/lib/api/orders'
 import { formatCurrency, formatDateTime } from '@/lib/utils/format'
 
@@ -13,86 +30,144 @@ export const Route = createFileRoute('/_app/bills/')({
   component: BillsPage
 })
 
+const STATUS_OPTIONS = [
+  { value: 'open', label: 'Open (unpaid)' },
+  { value: 'paid', label: 'Paid' },
+  { value: 'closed', label: 'Closed' },
+  { value: 'voided', label: 'Voided' }
+]
+
+// Customer codes look like "T12-MG-20261006-001": table 12, tab 001
+const tableOf = (code?: string | null) => {
+  const m = String(code || '').match(/^T?([^-]+)-/)
+  return m ? `T${m[1].replace(/^T/i, '')}` : code || '-'
+}
+
+const openPrint = (id: string) => window.open(`/bill/${id}`, '_blank')
+
 function BillsPage () {
+  const auth = useAuth()
+  const navigate = useNavigate()
   const [page, setPage] = useState(1)
-  const query = useBills({ page, limit: 20 })
+  const [filters, setFilters] = useState(emptyToolbar())
+  const [paying, setPaying] = useState<Bill | null>(null)
+  const query = useBills({ page, limit: 20, ...toolbarParams(filters) })
+  const canPay = auth.hasPermission('payment.record')
+
+  const onFilters = (v: typeof filters) => {
+    setFilters(v)
+    setPage(1)
+  }
 
   const columns: Column<Bill>[] = [
     {
       key: 'bill_ref',
-      header: 'Ref',
+      header: 'Bill',
       render: r => (
-        <Link to='/bills/$id' params={{ id: r.id }} style={{ textDecoration: 'none' }}>
-          <Text c='blue' fw={500}>
+        <Stack gap={2} align='flex-start'>
+          <Text c='blue' fw={500} style={{ whiteSpace: 'nowrap' }}>
             {r.bill_ref}
           </Text>
-        </Link>
+          <StatBadge value={r.outlet} />
+        </Stack>
       )
     },
     {
-      key: 'customer',
-      header: 'Customer',
-      render: r => <Text size='sm'>{r.customer_code}</Text>
+      key: 'table',
+      header: 'Table',
+      render: r => (
+        <Tooltip label={`Tab ${r.customer_code}`} withArrow>
+          <Text size='sm' fw={600} style={{ whiteSpace: 'nowrap', cursor: 'default' }}>
+            {tableOf(r.customer_code)}
+          </Text>
+        </Tooltip>
+      )
     },
     {
       key: 'waiter',
       header: 'Waiter',
-      render: r => r.waiter?.full_name || '-'
+      render: r => <Text size='sm' style={{ whiteSpace: 'nowrap' }}>{r.waiter?.full_name || '-'}</Text>
     },
     {
-      key: 'gross',
-      header: 'Gross',
-      align: 'right',
-      render: r => formatCurrency(r.gross_total)
-    },
-    {
-      key: 'discount',
-      header: 'Discount',
+      // Gross and discount sit under the net amount; saves two columns
+      key: 'net',
+      header: 'Amount',
       align: 'right',
       render: r => {
         const d = parseFloat(r.discount_total)
-        return d > 0 ? (
-          <Text c='red' size='sm'>
-            -{formatCurrency(d)}
-          </Text>
-        ) : (
-          <Text c='dimmed' size='sm'>
-            -
-          </Text>
+        return (
+          <Stack gap={0} align='flex-end'>
+            <Text fw={600} style={{ whiteSpace: 'nowrap' }}>
+              {formatCurrency(r.net_total)}
+            </Text>
+            {d > 0 && (
+              <Text size='xs' c='red' style={{ whiteSpace: 'nowrap' }}>
+                {formatCurrency(r.gross_total)} − {formatCurrency(d)} discount
+              </Text>
+            )}
+          </Stack>
         )
       }
     },
     {
-      key: 'net',
-      header: 'Net',
-      align: 'right',
-      render: r => <Text fw={600}>{formatCurrency(r.net_total)}</Text>
-    },
-    {
       key: 'status',
       header: 'Status',
-      render: r => <StatBadge value={r.status} />
+      render: r => <BillStatusBadge status={r.status} paymentState={r.payment_state} />
     },
     {
       key: 'created',
       header: 'Created',
-      render: r => formatDateTime(r.created_at)
+      render: r => (
+        <Text size='sm' style={{ whiteSpace: 'nowrap' }}>
+          {dayjs(r.created_at).format('D MMM, HH:mm')}
+        </Text>
+      )
+    },
+    {
+      key: 'actions',
+      header: '',
+      align: 'right',
+      render: r => (
+        <Group gap={4} justify='flex-end' wrap='nowrap' onClick={e => e.stopPropagation()}>
+          {canPay && r.status === 'open' && (
+            <Button size='xs' leftSection={<Banknote size={14} />} onClick={() => setPaying(r)}>
+              Pay
+            </Button>
+          )}
+          <Tooltip label='Print bill'>
+            <ActionIcon variant='subtle' color='gray' onClick={() => openPrint(r.id)} aria-label='Print bill'>
+              <Printer size={16} />
+            </ActionIcon>
+          </Tooltip>
+        </Group>
+      )
     }
   ]
 
   const bills = query.data?.data ?? []
   const meta = query.data?.meta
+  const error = query.error ? getErrorMessage(query.error) : null
 
   return (
     <>
-      <PageHeader title='Bills' subtitle='All bills in your scope' />
+      <PageHeader
+        title='Bills'
+        subtitle={meta ? `${meta.total} bill${meta.total === 1 ? '' : 's'}` : 'All bills in your scope'}
+      />
+
+      <ListToolbar
+        value={filters}
+        onChange={onFilters}
+        placeholder='Search bill, table, order or waiter'
+        statusOptions={STATUS_OPTIONS}
+      />
 
       {/* Mobile + tablet: card list. Desktop: table. */}
       <Box hiddenFrom='md'>
         <MobileBillList
           bills={bills}
           loading={query.isLoading}
-          error={query.error ? 'Failed to load bills' : null}
+          error={error}
           page={meta?.page ?? 1}
           pages={meta?.pages ?? 1}
           onPageChange={setPage}
@@ -104,14 +179,25 @@ function BillsPage () {
           data={bills}
           columns={columns}
           loading={query.isLoading}
-          error={query.error ? 'Failed to load bills' : null}
+          error={error}
+          onRetry={() => query.refetch()}
           rowKey={r => r.id}
+          onRowClick={r => navigate({ to: '/bills/$id', params: { id: r.id } })}
           meta={meta}
           onPageChange={setPage}
           emptyTitle='No bills'
-          emptyDescription='Bills are created from orders.'
+          emptyDescription={filters.search || filters.status || filters.preset !== 'any' ? 'No bills match these filters.' : 'Bills are created from orders.'}
         />
       </Box>
+
+      {paying && (
+        <RecordPaymentModal
+          opened
+          onClose={() => setPaying(null)}
+          billId={paying.id}
+          billNetTotal={parseFloat(paying.net_total)}
+        />
+      )}
     </>
   )
 }
@@ -164,7 +250,7 @@ function MobileBillList ({
       <Card withBorder radius='md' p='xl'>
         <Stack align='center' gap={6}>
           <Text fw={600} size='sm'>No bills</Text>
-          <Text size='xs' c='dimmed' ta='center'>Bills are created from orders.</Text>
+          <Text size='xs' c='dimmed' ta='center'>Nothing matches. Bills are created from orders.</Text>
         </Stack>
       </Card>
     )
@@ -172,11 +258,12 @@ function MobileBillList ({
 
   return (
     <>
-      <Stack gap='sm'>
-        {bills.map(bill => (
-          <BillCard key={bill.id} bill={bill} />
-        ))}
-      </Stack>
+      <DayGroupedList
+        items={bills}
+        getDate={b => b.created_at}
+        keyOf={b => b.id}
+        render={bill => <BillCard bill={bill} />}
+      />
 
       {pages > 1 && (
         <Group justify='space-between' mt='md' px={4}>
@@ -204,14 +291,14 @@ function BillCard ({ bill }: { bill: Bill }) {
           <Text size='sm' fw={700} truncate style={{ letterSpacing: '-0.01em' }}>
             {bill.bill_ref}
           </Text>
-          <StatBadge value={bill.status} />
+          <BillStatusBadge status={bill.status} paymentState={bill.payment_state} />
         </Group>
 
-        {/* Row 2: customer + waiter */}
+        {/* Row 2: table + waiter */}
         <Group gap='md' mb={10} wrap='wrap'>
           <Group gap={4} wrap='nowrap'>
             <Hash size={13} color='#868E96' />
-            <Text size='xs' c='dimmed'>{bill.customer_code}</Text>
+            <Text size='xs' c='dimmed'>Table {tableOf(bill.customer_code)}</Text>
           </Group>
           {bill.waiter?.full_name && (
             <Group gap={4} wrap='nowrap'>

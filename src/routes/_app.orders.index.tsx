@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import {
   Badge,
   Box,
@@ -15,10 +15,30 @@ import { useState } from 'react'
 import { useAuth } from '@/lib/auth/useAuth'
 import { useOrders } from '@/hooks/useOrders'
 import { PageHeader } from '@/components/PageHeader'
+import { DayGroupedList } from '@/components/DayGroupedList'
 import { DataTable, Column } from '@/components/DataTable'
 import { StatBadge } from '@/components/StatBadge'
 import { Order } from '@/lib/api/orders'
 import { formatCurrency, formatDateTime } from '@/lib/utils/format'
+import { getErrorMessage } from '@/lib/api/client'
+import { ListToolbar, emptyToolbar, toolbarParams } from '@/components/ListToolbar'
+
+const STATUS_OPTIONS = [
+  { value: 'open', label: 'Open' },
+  { value: 'pending_approval', label: 'Needs approval' },
+  { value: 'in_progress', label: 'In progress' },
+  { value: 'served', label: 'Served' },
+  { value: 'billed', label: 'Billed' },
+  { value: 'closed', label: 'Closed' },
+  { value: 'cancelled', label: 'Cancelled' }
+]
+
+// "09", "9" and "T00099" all show the same way: T9, T99
+const tableLabel = (t?: string | null) => {
+  if (!t) return '-'
+  const raw = String(t).replace(/^T/i, '')
+  return /^\d+$/.test(raw) ? `T${Number(raw)}` : String(t)
+}
 
 export const Route = createFileRoute('/_app/orders/')({
   component: OrdersPage
@@ -33,8 +53,13 @@ function orderTotal (order: Order): number {
 
 function OrdersPage () {
   const auth = useAuth()
+  const navigate = useNavigate()
   const [page, setPage] = useState(1)
-  const query = useOrders({ page, limit: 20 })
+  const [filters, setFilters] = useState(emptyToolbar())
+  const query = useOrders({ page, limit: 20, ...toolbarParams(filters) })
+  const error = query.error ? getErrorMessage(query.error) : null
+  // The bar only sees the bar lines of an order
+  const barOnly = auth.hasRole('bar_attendant') && !auth.hasRole('manager', 'md', 'admin', 'waiter')
 
   const columns: Column<Order>[] = [
     {
@@ -76,8 +101,8 @@ function OrdersPage () {
       width: 90,
       render: r =>
         r.table_number ? (
-          <Badge variant='light' color='gray' radius='sm' size='md'>
-            {r.table_number}
+          <Badge variant='light' color='gray' radius='sm' size='md' styles={{ root: { maxWidth: 'none' }, label: { overflow: 'visible' } }}>
+            {tableLabel(r.table_number)}
           </Badge>
         ) : (
           <Text size='sm' c='dimmed'>
@@ -99,7 +124,7 @@ function OrdersPage () {
     },
     {
       key: 'lines',
-      header: 'Lines',
+      header: barOnly ? 'Bar lines' : 'Lines',
       align: 'right',
       width: 80,
       render: r => (
@@ -114,7 +139,7 @@ function OrdersPage () {
     },
     {
       key: 'total',
-      header: 'Total',
+      header: barOnly ? 'Bar total' : 'Total',
       align: 'right',
       render: r => (
         <Text size='sm' fw={600} style={{ fontVariantNumeric: 'tabular-nums' }}>
@@ -125,22 +150,15 @@ function OrdersPage () {
     {
       key: 'created',
       header: 'Created',
-      render: r => {
-        const [date, ...timeParts] = formatDateTime(r.created_at).split(' ')
-        return (
-          <Stack gap={0}>
-            <Text size='sm'>{date}</Text>
-            <Text size='xs' c='dimmed'>
-              {timeParts.join(' ')}
-            </Text>
-          </Stack>
-        )
-      }
+      render: r => (
+        <Text size='sm' style={{ whiteSpace: 'nowrap' }}>
+          {formatDateTime(r.created_at)}
+        </Text>
+      )
     },
     {
       key: 'status',
       header: 'Status',
-      width: 130,
       render: r => <StatBadge value={r.status} />
     },
     {
@@ -158,7 +176,7 @@ function OrdersPage () {
     <>
       <PageHeader
         title='Orders'
-        subtitle='All orders for your scope'
+        subtitle={query.data?.meta ? `${query.data.meta.total} order${query.data.meta.total === 1 ? '' : 's'}` : 'All orders for your scope'}
         actions={
           auth.hasPermission('order.create') ? (
             <Button
@@ -173,12 +191,22 @@ function OrdersPage () {
         }
       />
 
+      <ListToolbar
+        value={filters}
+        onChange={v => {
+          setFilters(v)
+          setPage(1)
+        }}
+        placeholder='Search order ref or table'
+        statusOptions={STATUS_OPTIONS}
+      />
+
       {/* Mobile + tablet: card list. Desktop: table. */}
       <Box hiddenFrom='md'>
         <MobileOrderList
           orders={orders}
           loading={query.isLoading}
-          error={query.error ? 'Failed to load orders' : null}
+          error={error}
           meta={meta}
           onPageChange={setPage}
         />
@@ -189,8 +217,10 @@ function OrdersPage () {
           data={orders}
           columns={columns}
           loading={query.isLoading}
-          error={query.error ? 'Failed to load orders' : null}
+          error={error}
+          onRetry={() => query.refetch()}
           rowKey={r => r.id}
+          onRowClick={r => navigate({ to: '/orders/$id', params: { id: r.id } })}
           meta={meta}
           onPageChange={setPage}
           emptyTitle='No orders'
@@ -301,11 +331,12 @@ function MobileOrderList ({
 
   return (
     <>
-      <Stack gap='sm'>
-        {orders.map(order => (
-          <OrderCard key={order.id} order={order} />
-        ))}
-      </Stack>
+      <DayGroupedList
+        items={orders}
+        getDate={o => o.created_at}
+        keyOf={o => o.id}
+        render={order => <OrderCard order={order} />}
+      />
 
       {totalPages > 1 && (
         <Group justify='space-between' mt='md' px={4}>
@@ -375,7 +406,7 @@ function OrderCard ({ order }: { order: Order }) {
           {order.table_number && (
             <Group gap={6} wrap='nowrap'>
               <Hash size={13} color='var(--mantine-color-gray-6)' />
-              <Text size='sm'>{order.table_number}</Text>
+              <Text size='sm'>{tableLabel(order.table_number)}</Text>
             </Group>
           )}
         </Group>

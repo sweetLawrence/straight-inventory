@@ -285,6 +285,8 @@ export interface Handover {
   /** waiter = your own bills; outlet = the whole bar */
   scope?: 'waiter' | 'outlet';
   as_of?: string;
+  /** Previous shift asked for, but this property has had no shift before the current one */
+  no_previous?: boolean;
 }
 
 /** 'previous' = the shift before the one running now (e.g. last night after 06:00) */

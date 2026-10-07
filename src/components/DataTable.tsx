@@ -119,6 +119,7 @@ import { AlertTriangle, RotateCw } from 'lucide-react'
 import { ReactNode } from 'react'
 import { EmptyState } from './EmptyState'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { DayGroupedList } from './DayGroupedList'
 
 export interface Column<T> {
   key: string
@@ -143,6 +144,8 @@ interface DataTableProps<T> {
   onRetry?: () => void
   /** Phones: show each row as a card ('cards', default) or keep the scrolling table */
   mobile?: 'cards' | 'table'
+  /** Phones: group the cards under Today, Yesterday, Previous 7 days… using this date */
+  groupByDate?: (row: T) => string | Date | null | undefined
 }
 
 export function DataTable<T> ({
@@ -157,7 +160,8 @@ export function DataTable<T> ({
   meta,
   onPageChange,
   onRetry,
-  mobile = 'cards'
+  mobile = 'cards',
+  groupByDate
 }: DataTableProps<T>) {
   const isMobile = useIsMobile()
   const showPagination = meta && meta.pages > 1 && onPageChange
@@ -185,6 +189,35 @@ export function DataTable<T> ({
 
   // Phones: one card per row. First column is the title, the rest are label / value pairs.
   const [first, ...rest] = columns
+  const renderCard = (row: T) => (
+    <Paper
+      key={rowKey(row)}
+      withBorder
+      radius='md'
+      p='sm'
+      onClick={onRowClick ? () => onRowClick(row) : undefined}
+      style={{ cursor: onRowClick ? 'pointer' : undefined }}
+    >
+      {first && (
+        <Box mb={rest.length ? 6 : 0} style={{ fontWeight: 600, fontSize: 14 }}>
+          {first.render(row)}
+        </Box>
+      )}
+      <Stack gap={4}>
+        {rest.map(col => (
+          <Group key={col.key} justify='space-between' wrap='nowrap' gap='md' align='center'>
+            <Text size='xs' c='dimmed' style={{ flexShrink: 0 }}>
+              {col.header}
+            </Text>
+            <Box style={{ fontSize: 13, textAlign: 'right', minWidth: 0, overflowWrap: 'anywhere' }}>
+              {col.render(row)}
+            </Box>
+          </Group>
+        ))}
+      </Stack>
+    </Paper>
+  )
+
   const cards = (
     <Stack gap='xs'>
       {loading &&
@@ -194,36 +227,10 @@ export function DataTable<T> ({
             <Box mt={10} style={{ height: 10, width: '85%', borderRadius: 4, background: '#F1F3F5' }} />
           </Paper>
         ))}
-      {!loading &&
-        !error &&
-        data.map(row => (
-          <Paper
-            key={rowKey(row)}
-            withBorder
-            radius='md'
-            p='sm'
-            onClick={onRowClick ? () => onRowClick(row) : undefined}
-            style={{ cursor: onRowClick ? 'pointer' : undefined }}
-          >
-            {first && (
-              <Box mb={rest.length ? 6 : 0} style={{ fontWeight: 600, fontSize: 14 }}>
-                {first.render(row)}
-              </Box>
-            )}
-            <Stack gap={4}>
-              {rest.map(col => (
-                <Group key={col.key} justify='space-between' wrap='nowrap' gap='md' align='center'>
-                  <Text size='xs' c='dimmed' style={{ flexShrink: 0 }}>
-                    {col.header}
-                  </Text>
-                  <Box style={{ fontSize: 13, textAlign: 'right', minWidth: 0, overflowWrap: 'anywhere' }}>
-                    {col.render(row)}
-                  </Box>
-                </Group>
-              ))}
-            </Stack>
-          </Paper>
-        ))}
+      {!loading && !error && groupByDate && data.length > 0 && (
+        <DayGroupedList items={data} getDate={groupByDate} keyOf={rowKey} gap='xs' render={row => renderCard(row)} />
+      )}
+      {!loading && !error && !groupByDate && data.map(row => renderCard(row))}
       {isEmpty && (
         <Center py='xl'>
           <EmptyState title={emptyTitle} description={emptyDescription} />
