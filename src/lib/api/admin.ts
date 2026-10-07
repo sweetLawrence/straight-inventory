@@ -119,6 +119,7 @@ export async function getReconciliationCheck(id: string) {
 
 export async function runReconciliation(data: {
   check_type: 'customer_bill' | 'waiter_collections' | 'stock_fulfilment';
+  property_id?: string;
   business_day_id?: string;
   shift_id?: string;
 }) {
@@ -252,6 +253,8 @@ export interface EventLogEntry {
 }
 
 export async function listAuditEvents(params?: {
+  search?: string;
+  area?: string;
   page?: number;
   limit?: number;
   event_type?: string;

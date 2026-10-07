@@ -27,11 +27,16 @@ export function VerifyPaymentLineModal({ opened, onClose, line }: Props) {
 
   const form = useForm({
     initialValues: {
-      verification_status: 'verified' as 'verified' | 'unverified' | 'failed',
+      // Nothing pre-selected: the cashier must choose after checking the statement
+      verification_status: '' as '' | 'verified' | 'unverified' | 'failed',
       verification_notes: '',
     },
     validate: {
-      verification_status: (v) => (v ? null : 'Required'),
+      verification_status: (v) => (v ? null : 'Choose what you found'),
+      verification_notes: (v, values) =>
+        values.verification_status && values.verification_status !== 'verified' && !v.trim()
+          ? 'Say what was wrong (e.g. amount differs, code not on statement)'
+          : null,
     },
   });
 
@@ -41,7 +46,7 @@ export function VerifyPaymentLineModal({ opened, onClose, line }: Props) {
       await verify.mutateAsync({
         lineId: line.id,
         data: {
-          verification_status: values.verification_status,
+          verification_status: values.verification_status as 'verified' | 'unverified' | 'failed',
           verification_notes: values.verification_notes || undefined,
         },
       });
@@ -89,17 +94,18 @@ export function VerifyPaymentLineModal({ opened, onClose, line }: Props) {
 
           <Select
             label="Verification Result"
+            placeholder="Check the M-Pesa/card statement, then choose"
             data={[
-              { value: 'verified', label: 'Verified- matched' },
-              { value: 'unverified', label: 'Unverified- not found' },
-              { value: 'failed', label: 'Failed- invalid' },
+              { value: 'verified', label: 'Verified – found on the statement, amount matches' },
+              { value: 'unverified', label: 'Not matched – not found yet, or amount differs' },
+              { value: 'failed', label: 'Failed – money not received / invalid code' },
             ]}
             required
             {...form.getInputProps('verification_status')}
           />
 
           <Textarea
-            label="Notes (optional)"
+            label={form.values.verification_status && form.values.verification_status !== 'verified' ? 'What was wrong (required)' : 'Notes (optional)'}
             placeholder="Any remarks"
             autosize
             minRows={2}

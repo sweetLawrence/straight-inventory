@@ -482,15 +482,29 @@ export interface BarPendingLine {
   quantity: number;
   unit_price: string;
   stock_item: { id: string; item_name: string } | null;
+  /** Current stock of each drink the line uses (from its recipe) */
+  stock?: {
+    name: string;
+    per_unit: number;
+    in_stock: number;
+    pack_size: number | null;
+    pack_label: string | null;
+  }[];
 }
 
 export interface BarIssueResult {
-  order_line_issue_id: string;
   order_line_id: string;
   order_ref: string;
   item_name: string;
-  quantity: number;
-  batch_ref: string;
+  issued: {
+    order_line_issue_id: string;
+    stock_name: string;
+    stock_item_id: string;
+    quantity: number;
+    batch_ref: string;
+    /** What is left of this drink after the issue */
+    remaining: number;
+  }[];
 }
 
 export async function listBarPending(params?: {

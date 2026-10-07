@@ -3,6 +3,8 @@ import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { Info } from 'lucide-react';
 import { useRunReconciliation } from '@/hooks/useAdmin';
+import { useProperties } from '@/hooks/useCore';
+import { useAuth } from '@/lib/auth/useAuth';
 import { getErrorMessage } from '@/lib/api/client';
 
 interface Props {
@@ -12,6 +14,10 @@ interface Props {
 
 export function RunCheckModal({ opened, onClose }: Props) {
   const run = useRunReconciliation();
+  const auth = useAuth();
+  // MD/admin are not tied to one property, so they pick which one to check
+  const isGroupLevel = auth.hasRole('md', 'admin');
+  const properties = useProperties(1, 20);
 
   const form = useForm({
     initialValues: {
@@ -19,12 +25,19 @@ export function RunCheckModal({ opened, onClose }: Props) {
         | 'customer_bill'
         | 'waiter_collections'
         | 'stock_fulfilment',
+      property_id: '',
+    },
+    validate: {
+      property_id: (v) => (isGroupLevel && !v ? 'Choose the property to check' : null),
     },
   });
 
   const handleSubmit = async (values: typeof form.values) => {
     try {
-      const result = await run.mutateAsync(values);
+      const result = await run.mutateAsync({
+        check_type: values.check_type,
+        property_id: values.property_id || undefined,
+      });
       notifications.show({
         color: 'green',
         title: 'Reconciliation complete',
@@ -50,6 +63,16 @@ export function RunCheckModal({ opened, onClose }: Props) {
               Creates one reconciliation record per affected entity.
             </Text>
           </Alert>
+
+          {isGroupLevel && (
+            <Select
+              label="Property"
+              placeholder="Which property?"
+              data={(properties.data?.data ?? []).map((p) => ({ value: p.id, label: p.name }))}
+              required
+              {...form.getInputProps('property_id')}
+            />
+          )}
 
           <Select
             label="Check Type"

@@ -439,7 +439,7 @@
 //       >
 //         <ScrollArea style={{ flex: 1 }} scrollbarSize={6} type='hover'>
 //           <Stack gap={0} p='sm'>
-//             {navSections.map((section, sIdx) => {
+//             {sections.map((section, sIdx) => {
 //               const visibleItems = section.items.filter(item =>
 //                 canSee(item.roles)
 //               )
@@ -448,7 +448,7 @@
 //               return (
 //                 <Box
 //                   key={section.title}
-//                   mb={sIdx === navSections.length - 1 ? 0 : 4}
+//                   mb={sIdx === sections.length - 1 ? 0 : 4}
 //                 >
 //                   <Text
 //                     size='xs'
@@ -692,7 +692,8 @@ import {
   Layers,
   Wine,
   CheckCircle2,
-  FileSpreadsheet
+  FileSpreadsheet,
+  ShieldCheck
 } from 'lucide-react'
 import {
   Link,
@@ -734,6 +735,13 @@ const navSections: { title: string; items: NavEntry[] }[] = [
         label: 'Dashboard',
         to: '/dashboard',
         icon: <LayoutDashboard size={18} />
+      },
+      {
+        type: 'leaf',
+        label: 'Reports',
+        to: '/reports',
+        icon: <BarChart3 size={18} />,
+        roles: ['manager', 'md', 'admin']
       }
     ]
   },
@@ -809,7 +817,13 @@ const navSections: { title: string; items: NavEntry[] }[] = [
           },
           { type: 'leaf', label: 'Cash Drops', to: '/cash-drops' },
           { type: 'leaf', label: 'Float', to: '/float' },
-          { type: 'leaf', label: 'My Handover', to: '/handover' }
+          {
+            type: 'leaf',
+            label: 'My Handover',
+            to: '/handover',
+            // Waiters' own cash summary; the bar uses Bar Handover, the cashier confirms drops
+            roles: ['waiter', 'supervisor', 'manager']
+          }
         ]
       }
     ]
@@ -956,16 +970,9 @@ const navSections: { title: string; items: NavEntry[] }[] = [
         roles: ['md', 'admin']
       },
       {
-        type: 'leaf',
-        label: 'Reports',
-        to: '/reports',
-        icon: <BarChart3 size={18} />,
-        roles: ['manager', 'md']
-      },
-      {
         type: 'group',
         label: 'System',
-        icon: <BarChart3 size={18} />,
+        icon: <ShieldCheck size={18} />,
         roles: ['manager', 'md', 'admin'],
         children: [
           { type: 'leaf', label: 'Adjustments', to: '/adjustments' },
@@ -977,6 +984,12 @@ const navSections: { title: string; items: NavEntry[] }[] = [
     ]
   }
 ]
+
+// MD / admin: overview first, then the money, then the rest
+const GROUP_SECTION_ORDER = ['Overview', 'Sales', 'Operations', 'Store', 'Bar', 'Management']
+const groupSections = [...navSections].sort(
+  (a, b) => GROUP_SECTION_ORDER.indexOf(a.title) - GROUP_SECTION_ORDER.indexOf(b.title)
+)
 
 export function AppShell ({ children }: { children?: ReactNode }) {
   const [opened, { toggle, close }] = useDisclosure()
@@ -994,6 +1007,7 @@ export function AppShell ({ children }: { children?: ReactNode }) {
   }
 
   const isGroupLevel = auth.hasRole('md', 'admin')
+  const sections = isGroupLevel ? groupSections : navSections
   const canSee = (entry: { roles?: string[]; perm?: string[] }) => {
     const roleOk =
       !entry.roles || isGroupLevel || entry.roles.some(r => auth.hasRole(r))
@@ -1135,7 +1149,7 @@ export function AppShell ({ children }: { children?: ReactNode }) {
       >
         <ScrollArea style={{ flex: 1 }} scrollbarSize={6} type='hover'>
           <Stack gap={0} p='sm'>
-            {navSections.map((section, sIdx) => {
+            {sections.map((section, sIdx) => {
               const visibleItems = section.items.filter(item =>
                 canSee(item)
               )
@@ -1144,7 +1158,7 @@ export function AppShell ({ children }: { children?: ReactNode }) {
               return (
                 <Box
                   key={section.title}
-                  mb={sIdx === navSections.length - 1 ? 0 : 4}
+                  mb={sIdx === sections.length - 1 ? 0 : 4}
                 >
                   <Text
                     size='xs'

@@ -1033,10 +1033,14 @@ export function BulkStaffMealModal({
     }
   }, [opened, defaultMealType, defaultDate]);
 
-  const dailyQuery = useDailyStaffMealStatus({
-    date: date || dayjs().format('YYYY-MM-DD'),
-    meal_type: mealType,
-  });
+  // Only ask the server once the dialog is open
+  const dailyQuery = useDailyStaffMealStatus(
+    {
+      date: date || dayjs().format('YYYY-MM-DD'),
+      meal_type: mealType,
+    },
+    { enabled: opened }
+  );
 
   const lookup = useScheduleLookup({
     date: date,

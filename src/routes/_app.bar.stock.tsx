@@ -1,133 +1,262 @@
-// import { createFileRoute } from '@tanstack/react-router';
-// import { Badge, Text } from '@mantine/core';
-// import { useState } from 'react';
-// import { useStockItems } from '@/hooks/useStock';
-// import { PageHeader } from '@/components/PageHeader';
-// import { DataTable, Column } from '@/components/DataTable';
-// import { StockItem } from '@/lib/api/stock';
-// import { formatNumber } from '@/lib/utils/format';
-
-// export const Route = createFileRoute('/_app/bar/stock')({
-//   component: BarStockPage,
-// });
-
-// function BarStockPage() {
-//   const [page, setPage] = useState(1);
-//   const query = useStockItems({
-//     page,
-//     limit: 20,
-//     store_type: 'bar_store',
-//   });
-
-//   const columns: Column<StockItem>[] = [
-//     {
-//       key: 'item',
-//       header: 'Item',
-//       render: (r) => <Text fw={500}>{r.item?.name || '-'}</Text>,
-//     },
-//     {
-//       key: 'code',
-//       header: 'Code',
-//       render: (r) => <Text size="sm" c="dimmed">{r.item?.code}</Text>,
-//     },
-//     {
-//       key: 'model',
-//       header: 'Type',
-//       render: (r) => (
-//         <Badge variant="light" color="grape">
-//           {r.stock_model}
-//         </Badge>
-//       ),
-//     },
-//     {
-//       key: 'reorder',
-//       header: 'Reorder at',
-//       align: 'right',
-//       render: (r) => (r.reorder_level ? formatNumber(r.reorder_level) : '-'),
-//     },
-//   ];
-
-//   return (
-//     <>
-//       <PageHeader title="Bar Stock" subtitle="Only bar-store items" />
-//       <DataTable
-//         data={query.data?.data ?? []}
-//         columns={columns}
-//         loading={query.isLoading}
-//         error={query.error ? 'Failed to load bar stock' : null}
-//         rowKey={(r) => r.id}
-//         meta={query.data?.meta}
-//         onPageChange={setPage}
-//         emptyTitle="No bar stock"
-//         emptyDescription="Bar-store items will appear here."
-//       />
-//     </>
-//   );
-// }
-
+import { useMemo, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { Badge, Text } from '@mantine/core'
-import { useState } from 'react'
-import { useStockItems } from '@/hooks/useStock'
+import {
+  Box,
+  Card,
+  Group,
+  Loader,
+  SegmentedControl,
+  Select,
+  SimpleGrid,
+  Stack,
+  Text,
+  TextInput
+} from '@mantine/core'
+import { DatePickerInput } from '@mantine/dates'
+import dayjs from 'dayjs'
+import { Search } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
-import { DataTable, Column } from '@/components/DataTable'
-import { StockItem } from '@/lib/api/stock'
-import { formatNumber } from '@/lib/utils/format'
+import {
+  BAR,
+  DrinkCard,
+  MovementsDrawer,
+  kes,
+  useStockChanges
+} from '@/components/bar/BarStockParts'
+import { useBarStock } from '@/hooks/useBarStock'
+import { useProperties } from '@/hooks/useCore'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { useAuth } from '@/lib/auth/useAuth'
+import { getErrorMessage } from '@/lib/api/client'
 
 export const Route = createFileRoute('/_app/bar/stock')({
   component: BarStockPage
 })
 
-function BarStockPage () {
-  const [page, setPage] = useState(1)
-  const query = useStockItems({ page, limit: 20, store_type: 'bar_store' })
+type When = 'today' | 'yesterday' | 'date'
+type Filter = 'all' | 'sold' | 'low' | 'out'
 
-  const columns: Column<StockItem>[] = [
-    {
-      key: 'item',
-      header: 'Item',
-      render: r => <Text fw={500}>{r.item?.name || '-'}</Text>
-    },
-    {
-      key: 'code',
-      header: 'Code',
-      render: r => (
-        <Text size='sm' c='dimmed'>
-          {r.item?.code}
-        </Text>
-      )
-    },
-    {
-      key: 'model',
-      header: 'Type',
-      render: r => (
-        <Badge variant='light' color='grape'>
-          {r.stock_model}
-        </Badge>
-      )
-    },
-    {
-      key: 'reorder',
-      header: 'Reorder at',
-      align: 'right',
-      render: r => (r.reorder_level ? formatNumber(r.reorder_level) : '-')
-    }
-  ]
+function BarStockPage () {
+  const auth = useAuth()
+  const isMobile = useIsMobile()
+  const isGroupLevel = auth.hasRole('md', 'admin')
+
+  const [when, setWhen] = useState<When>('today')
+  const [date, setDate] = useState<string | null>(
+    dayjs().subtract(2, 'day').format('YYYY-MM-DD')
+  )
+  const [propertyId, setPropertyId] = useState<string>('all')
+  const [filter, setFilter] = useState<Filter>('all')
+  const [q, setQ] = useState('')
+  const [openId, setOpenId] = useState<string | null>(null)
+
+  const day =
+    when === 'yesterday'
+      ? dayjs().subtract(1, 'day').format('YYYY-MM-DD')
+      : when === 'date'
+      ? date || undefined
+      : undefined
+
+  const stock = useBarStock({
+    from: day,
+    to: day,
+    property_id: isGroupLevel && propertyId !== 'all' ? propertyId : undefined
+  })
+  const properties = useProperties(1, 20)
+  const data = stock.data
+  const changes = useStockChanges(data?.period.is_today ? data.drinks : undefined)
+  const isToday = !!data?.period.is_today
+
+  const drinks = useMemo(() => {
+    const needle = q.trim().toLowerCase()
+    return (data?.drinks ?? []).filter(
+      d =>
+        (filter === 'all' ||
+          (filter === 'sold' && d.sold > 0) ||
+          d.status === filter) &&
+        (!needle ||
+          d.name.toLowerCase().includes(needle) ||
+          d.code.toLowerCase().includes(needle))
+    )
+  }, [data, filter, q])
+
+  const s = data?.summary
+  const periodText = data
+    ? isToday
+      ? `Today · since ${dayjs(data.period.start).format('HH:mm')} · updates live`
+      : dayjs(data.period.from).format('dddd D MMM YYYY')
+    : ''
 
   return (
-    <>
-      <PageHeader title='Bar Stock' subtitle='Only bar-store items' />
-      <DataTable
-        data={query.data?.data ?? []}
-        columns={columns}
-        loading={query.isLoading}
-        error={query.error ? 'Failed to load bar stock' : null}
-        rowKey={r => r.id}
-        meta={query.data?.meta}
-        onPageChange={setPage}
-        emptyTitle='No bar stock'
-        emptyDescription='Bar-store items will appear here.'
+    <Stack gap='md' pb='xl'>
+      <PageHeader
+        title='Bar Stock'
+        subtitle={
+          <>
+            {periodText}
+            {stock.isFetching && <Loader size={10} ml={8} />}
+          </>
+        }
       />
-    </>
+
+      {/* ── Filters ── */}
+      <Card withBorder radius='md' p='sm'>
+        <Group gap='sm' align='flex-end' wrap='wrap'>
+          <SegmentedControl
+            value={when}
+            onChange={v => setWhen(v as When)}
+            data={[
+              { value: 'today', label: 'Today' },
+              { value: 'yesterday', label: 'Yesterday' },
+              { value: 'date', label: 'Pick a day' }
+            ]}
+            fullWidth={isMobile}
+            style={isMobile ? { width: '100%' } : undefined}
+          />
+          {when === 'date' && (
+            <DatePickerInput
+              value={date}
+              onChange={v => setDate(v as string | null)}
+              maxDate={dayjs().format('YYYY-MM-DD')}
+              valueFormat='D MMM YYYY'
+              w={isMobile ? '100%' : 170}
+            />
+          )}
+          {isGroupLevel && (
+            <Select
+              value={propertyId}
+              allowDeselect={false}
+              onChange={v => setPropertyId(v || 'all')}
+              data={[
+                { value: 'all', label: 'All properties' },
+                ...(properties.data?.data ?? []).map(p => ({
+                  value: p.id,
+                  label: p.name
+                }))
+              ]}
+              w={isMobile ? '100%' : 210}
+            />
+          )}
+        </Group>
+      </Card>
+
+      {stock.isError && !data ? (
+        <Card withBorder p='lg'>
+          <Text c='red'>{getErrorMessage(stock.error)}</Text>
+        </Card>
+      ) : !data || !s ? (
+        <Group justify='center' py='xl'>
+          <Loader />
+        </Group>
+      ) : (
+        <>
+          {/* ── Totals ── */}
+          <SimpleGrid cols={{ base: 2, md: 4 }} spacing='sm'>
+            <Stat
+              label={isToday ? 'Drinks sold today' : 'Drinks sold'}
+              value={Number(s.sold).toLocaleString('en-KE')}
+              hint={kes(s.revenue)}
+              color={BAR.wine}
+            />
+            <Stat
+              label='Received'
+              value={Number(s.received).toLocaleString('en-KE')}
+              hint={s.waste ? `${s.waste} wasted` : 'No waste'}
+              color={BAR.green}
+            />
+            <Stat
+              label='Running low'
+              value={String(s.low)}
+              hint={s.out ? `${s.out} out of stock` : 'None out of stock'}
+              color={s.out ? BAR.red : s.low ? BAR.orange : BAR.muted}
+            />
+            <Stat
+              label='Stock value'
+              value={kes(s.value)}
+              hint={`${s.drinks} drinks`}
+              color={BAR.navy}
+            />
+          </SimpleGrid>
+
+          {/* ── Search + quick filters ── */}
+          <Group gap='sm' wrap='wrap'>
+            <TextInput
+              placeholder='Search drink'
+              leftSection={<Search size={14} />}
+              value={q}
+              onChange={e => setQ(e.currentTarget.value)}
+              style={{ flex: 1, minWidth: 180 }}
+            />
+            <SegmentedControl
+              value={filter}
+              onChange={v => setFilter(v as Filter)}
+              data={[
+                { value: 'all', label: `All (${s.drinks})` },
+                {
+                  value: 'sold',
+                  label: `Sold (${data.drinks.filter(d => d.sold > 0).length})`
+                },
+                { value: 'low', label: `Low (${s.low})` },
+                { value: 'out', label: `Out (${s.out})` }
+              ]}
+            />
+          </Group>
+
+          {drinks.length === 0 ? (
+            <Text c='dimmed' ta='center' py='xl'>
+              No drinks match.
+            </Text>
+          ) : (
+            <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing='sm'>
+              {drinks.map(d => (
+                <DrinkCard
+                  key={d.id}
+                  drink={d}
+                  isToday={isToday}
+                  change={changes[d.id]}
+                  showProperty={isGroupLevel && propertyId === 'all'}
+                  onOpen={() => setOpenId(d.id)}
+                />
+              ))}
+            </SimpleGrid>
+          )}
+
+          <Text size='xs' c='dimmed' ta='center'>
+            Tap a drink to see every bottle in and out. Counts drop as soon as
+            the bar issues a drink.
+          </Text>
+        </>
+      )}
+
+      <MovementsDrawer drinkId={openId} onClose={() => setOpenId(null)} />
+    </Stack>
+  )
+}
+
+function Stat ({
+  label,
+  value,
+  hint,
+  color
+}: {
+  label: string
+  value: string
+  hint: string
+  color: string
+}) {
+  return (
+    <Card withBorder radius='md' p='md' style={{ borderTop: `3px solid ${color}` }}>
+      <Text size='xs' c='dimmed' fw={600} tt='uppercase'>
+        {label}
+      </Text>
+      <Text fw={800} fz={{ base: 20, sm: 24 }} style={{ color: BAR.navy, whiteSpace: 'nowrap' }}>
+        {value}
+      </Text>
+      <Box>
+        <Text size='xs' c='dimmed'>
+          {hint}
+        </Text>
+      </Box>
+    </Card>
   )
 }

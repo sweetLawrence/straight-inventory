@@ -1,6 +1,9 @@
+import { useMemo } from 'react';
 import {
   Button,
+  Chip,
   Group,
+  Input,
   Modal,
   NumberInput,
   Select,
@@ -13,6 +16,7 @@ import { useAddOrderLine } from '@/hooks/useOrders';
 import { useMenuItems } from '@/hooks/useCore';
 import { getErrorMessage } from '@/lib/api/client';
 import { formatCurrency } from '@/lib/utils/format';
+import { cookingStyles, menuBaseName } from '@/lib/utils/menuName';
 
 interface Props {
   opened: boolean;
@@ -28,25 +32,35 @@ export function AddLineModal({ opened, onClose, orderId }: Props) {
     initialValues: {
       menu_item_id: '',
       quantity: 1,
+      style: '',
       notes: '',
     },
     validate: {
       menu_item_id: (v) => (v ? null : 'Required'),
       quantity: (v) => (v > 0 ? null : 'Must be > 0'),
+      style: (v, values) => {
+        const item = menuItems.data?.data.find((m) => m.id === values.menu_item_id);
+        return item && cookingStyles(item.display_name).length && !v ? 'Choose how the kitchen should cook it' : null;
+      },
     },
   });
 
+  const selected = menuItems.data?.data.find((m) => m.id === form.values.menu_item_id);
+  const styles = useMemo(() => (selected ? cookingStyles(selected.display_name) : []), [selected]);
+
   const handleSubmit = async (values: typeof form.values) => {
+    // The chosen style travels with the line to the queue, slip and bill
+    const notes = [values.style ? `Style: ${values.style}` : '', values.notes.trim()].filter(Boolean).join(' · ');
     try {
       await addLine.mutateAsync({
         menu_item_id: values.menu_item_id,
         quantity: values.quantity,
-        notes: values.notes || undefined,
+        notes: notes || undefined,
       });
       notifications.show({
         color: 'green',
         title: 'Line added',
-        message: 'Order has been updated.',
+        message: `${values.quantity} × ${selected ? menuBaseName(selected.display_name) : 'item'}${values.style ? ` (${values.style})` : ''}`,
       });
       form.reset();
       onClose();
@@ -64,7 +78,7 @@ export function AddLineModal({ opened, onClose, orderId }: Props) {
       .filter((m) => m.status === 'active')
       .map((m) => ({
         value: m.id,
-        label: `${m.display_name}- ${formatCurrency(m.price)}`,
+        label: `${m.display_name} — ${formatCurrency(m.price)}`,
       })) || [];
 
   return (
@@ -78,7 +92,28 @@ export function AddLineModal({ opened, onClose, orderId }: Props) {
             data={itemOptions}
             required
             {...form.getInputProps('menu_item_id')}
+            onChange={(v) => {
+              form.setFieldValue('menu_item_id', v || '');
+              form.setFieldValue('style', '');
+            }}
           />
+          {styles.length > 0 && (
+            <Input.Wrapper label="How to cook it" required error={form.errors.style}>
+              <Chip.Group
+                multiple={false}
+                value={form.values.style}
+                onChange={(v) => form.setFieldValue('style', v as string)}
+              >
+                <Group gap="xs" mt={6}>
+                  {styles.map((s) => (
+                    <Chip key={s} value={s} radius="sm">
+                      {s}
+                    </Chip>
+                  ))}
+                </Group>
+              </Chip.Group>
+            </Input.Wrapper>
+          )}
           <NumberInput
             label="Quantity"
             min={1}
@@ -87,6 +122,7 @@ export function AddLineModal({ opened, onClose, orderId }: Props) {
           />
           <Textarea
             label="Notes (optional)"
+            placeholder="e.g. no chilli, well done"
             autosize
             minRows={2}
             {...form.getInputProps('notes')}

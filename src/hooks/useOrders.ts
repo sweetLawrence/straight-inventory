@@ -236,6 +236,7 @@ export function useIssueBarLine() {
     mutationFn: (orderLineId: string) => issueBarLine(orderLineId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['bar-pending'] });
+      qc.invalidateQueries({ queryKey: ['bar-stock'] });
       qc.invalidateQueries({ queryKey: ['orders'] });
       qc.invalidateQueries({ queryKey: ['order'] });
       qc.invalidateQueries({ queryKey: ['ledger'] });

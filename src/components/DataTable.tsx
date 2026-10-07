@@ -111,8 +111,11 @@ import {
   Box,
   Center,
   Loader,
-  Paper
+  Paper,
+  Button,
+  ThemeIcon
 } from '@mantine/core'
+import { AlertTriangle, RotateCw } from 'lucide-react'
 import { ReactNode } from 'react'
 import { EmptyState } from './EmptyState'
 
@@ -135,6 +138,8 @@ interface DataTableProps<T> {
   emptyDescription?: string
   meta?: { total: number; page: number; limit: number; pages: number }
   onPageChange?: (page: number) => void
+  /** Shows a Try again button on errors */
+  onRetry?: () => void
 }
 
 export function DataTable<T> ({
@@ -147,7 +152,8 @@ export function DataTable<T> ({
   emptyTitle,
   emptyDescription,
   meta,
-  onPageChange
+  onPageChange,
+  onRetry
 }: DataTableProps<T>) {
   const showPagination = meta && meta.pages > 1 && onPageChange
   const isEmpty = !loading && !error && (!data || data.length === 0)
@@ -156,7 +162,7 @@ export function DataTable<T> ({
     <Stack gap={0}>
       <Box style={{ overflowX: 'auto' }}>
         <Table
-          horizontalSpacing='lg'
+          horizontalSpacing='md'
           verticalSpacing='sm'
           highlightOnHover
           highlightOnHoverColor='var(--mantine-color-gray-0)'
@@ -264,7 +270,20 @@ export function DataTable<T> ({
               <Table.Tr>
                 <Table.Td colSpan={columns.length} style={{ padding: 0 }}>
                   <Center py='xl'>
-                    <EmptyState title='Failed to load' description={error} />
+                    <Stack align='center' gap={6} maw={420} px='md'>
+                      <ThemeIcon size={44} radius='xl' variant='light' color='red'>
+                        <AlertTriangle size={22} />
+                      </ThemeIcon>
+                      <Text fw={600}>Couldn't load this list</Text>
+                      <Text size='sm' c='dimmed' ta='center'>
+                        {error}
+                      </Text>
+                      {onRetry && (
+                        <Button size='xs' variant='light' leftSection={<RotateCw size={14} />} onClick={onRetry} mt={4}>
+                          Try again
+                        </Button>
+                      )}
+                    </Stack>
                   </Center>
                 </Table.Td>
               </Table.Tr>

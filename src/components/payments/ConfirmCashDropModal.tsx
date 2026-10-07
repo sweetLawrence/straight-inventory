@@ -3,7 +3,6 @@ import {
   Button,
   Group,
   Modal,
-  Select,
   Stack,
   Text,
   Textarea,
@@ -15,6 +14,7 @@ import { useConfirmCashDrop } from '@/hooks/usePayments';
 import { getErrorMessage } from '@/lib/api/client';
 import { formatCurrency } from '@/lib/utils/format';
 import { CashDrop } from '@/lib/api/payments';
+import { useAuth } from '@/lib/auth/useAuth';
 
 interface Props {
   opened: boolean;
@@ -24,10 +24,10 @@ interface Props {
 
 export function ConfirmCashDropModal({ opened, onClose, drop }: Props) {
   const confirm = useConfirmCashDrop();
+  const auth = useAuth();
 
   const form = useForm({
     initialValues: {
-      receiver_role: 'cashier' as 'cashier' | 'supervisor' | 'manager',
       notes: '',
     },
   });
@@ -38,7 +38,6 @@ export function ConfirmCashDropModal({ opened, onClose, drop }: Props) {
       await confirm.mutateAsync({
         id: drop.id,
         data: {
-          receiver_role: values.receiver_role,
           notes: values.notes || undefined,
         },
       });
@@ -78,15 +77,10 @@ export function ConfirmCashDropModal({ opened, onClose, drop }: Props) {
             </Stack>
           </Alert>
 
-          <Select
-            label="Your Role (as receiver)"
-            data={[
-              { value: 'cashier', label: 'Cashier' },
-              { value: 'supervisor', label: 'Supervisor' },
-              { value: 'manager', label: 'Manager' },
-            ]}
-            {...form.getInputProps('receiver_role')}
-          />
+          <Text size="sm" c="dimmed">
+            Confirming as <strong>{auth.user?.full_name}</strong>. Count the cash before confirming: this marks the
+            waiter's cash payments as verified.
+          </Text>
 
           <Textarea
             label="Notes (optional)"

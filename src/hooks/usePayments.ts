@@ -1,3 +1,4 @@
+import type { ListFilters } from '@/lib/api/listFilters';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   listPayments,
@@ -17,7 +18,7 @@ import {
   getHandover,
 } from '@/lib/api/payments';
 // ─── Payments ───────────────────────────────────────────────────────
-export function usePayments(params?: {
+export function usePayments(params?: ListFilters & {
   page?: number;
   limit?: number;
   waiter_id?: string;
@@ -86,7 +87,7 @@ export function useVerifyPaymentLine() {
 }
 
 // ─── Cash drops ─────────────────────────────────────────────────────
-export function useCashDrops(params?: {
+export function useCashDrops(params?: ListFilters & {
   page?: number;
   limit?: number;
   waiter_id?: string;
@@ -189,11 +190,13 @@ export function useCreateFloat() {
 }
 
 // ─── Handover ───────────────────────────────────────────────────────
-export function useCurrentHandover() {
+export function useCurrentHandover(enabled = true) {
   return useQuery({
     queryKey: ['handover-current'],
     queryFn: getCurrentHandover,
     retry: false,
+    refetchInterval: 30_000,
+    enabled,
   });
 }
 

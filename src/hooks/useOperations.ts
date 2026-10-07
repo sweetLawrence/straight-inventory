@@ -174,15 +174,18 @@ export function useResolveDispute(disputeId: string) {
 
 import { fetchDailyStaffMealStatus } from '@/lib/api/operations';
 
-export function useDailyStaffMealStatus(params: {
-  date: string;
-  meal_type: 'breakfast' | 'lunch' | 'supper';
-  property_id?: string;
-}) {
+export function useDailyStaffMealStatus(
+  params: {
+    date: string;
+    meal_type: 'breakfast' | 'lunch' | 'supper';
+    property_id?: string;
+  },
+  options: { enabled?: boolean } = {}
+) {
   return useQuery({
     queryKey: ['staff-meals-daily', params],
     queryFn: () => fetchDailyStaffMealStatus(params),
-    enabled: !!params.date && !!params.meal_type,
+    enabled: (options.enabled ?? true) && !!params.date && !!params.meal_type,
   });
 }
 

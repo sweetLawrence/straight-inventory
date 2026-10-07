@@ -26,6 +26,8 @@ interface Props {
   opened: boolean
   onClose: () => void
   weekStart: string
+  /** Needed for MD/admin, who are not tied to one property */
+  propertyId?: string
   dayOfWeek: number
   mealType: 'breakfast' | 'lunch' | 'supper'
   existing: StaffMenuSchedule | null
@@ -53,11 +55,12 @@ export function EditSlotModal ({
   opened,
   onClose,
   weekStart,
+  propertyId,
   dayOfWeek,
   mealType,
   existing
 }: Props) {
-  const stockItems = useStockItems({ limit: 200 })
+  const stockItems = useStockItems({ limit: 200, ...(propertyId ? { property_id: propertyId } : {}) })
   const units = useUnits()
   const upsert = useUpsertStaffMenuSlot()
 
@@ -104,6 +107,7 @@ export function EditSlotModal ({
         dayOfWeek,
         mealType,
         data: {
+          ...(propertyId ? { property_id: propertyId } : {}),
           notes: values.notes || null,
           items: values.lines.map(l => ({
             stock_item_id: l.stock_item_id,

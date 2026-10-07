@@ -19,6 +19,8 @@ export interface StockItem {
   property?: { id: string; code: string; name: string };
 
    dispatch_mode: 'by_weight' | 'by_portion' | 'by_count';
+  pack_size?: number | null;
+  pack_label?: string | null;
 }
 
 export async function listStockItems(params?: {
@@ -63,6 +65,8 @@ export interface Batch {
   supplier_id: string | null;
   purchase_ref: string | null;
   received_qty: string;
+  pack_size?: number | null;
+  packs_received?: number | null;
   received_unit_id: string;
   total_cost: string;
   cost_per_unit: string | null;
@@ -128,6 +132,8 @@ export async function createBatch(data: {
   purchase_ref?: string;
   expiry_date?: string;
   received_at?: string;
+  pack_size?: number | null;
+  packs_received?: number | null;
 }) {
   const res = await apiClient.post<ApiResponse<Batch>>('/stock/batches', data);
   return res.data.data;
@@ -369,6 +375,8 @@ export async function createStockItem(data: {
   store_type: 'food_store' | 'bar_store' | 'kitchen';
   dispatch_mode?: 'by_weight' | 'by_portion' | 'by_count';
   reorder_level?: number | null;
+  pack_size?: number | null;
+  pack_label?: string | null;
   portion?: {
     name: string;
     size: number;
@@ -391,6 +399,8 @@ export async function updateStockItem(
     dispatch_mode: 'by_weight' | 'by_portion' | 'by_count';
     reorder_level: number | null;
     status: 'active' | 'inactive' | 'discontinued';
+    pack_size: number | null;
+    pack_label: string | null;
   }>
 ) {
   const res = await apiClient.patch<ApiResponse<StockItem>>(

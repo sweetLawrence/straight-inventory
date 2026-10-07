@@ -231,6 +231,14 @@ interface Props {
   stockItem: StockItem | null;
 }
 
+// Stock is held in pieces; a pack size only applies to counted items.
+const packFields = (v: { dispatch_mode: string; pack_size: number | string; pack_label: string }) => {
+  const size = Number(v.pack_size) || 0;
+  return v.dispatch_mode === 'by_count' && size > 0
+    ? { pack_size: size, pack_label: v.pack_label || 'packet' }
+    : { pack_size: null, pack_label: null };
+};
+
 export function StockItemFormModal({ opened, onClose, stockItem }: Props) {
   const isEdit = !!stockItem;
   const create = useCreateStockItem();
@@ -246,6 +254,8 @@ export function StockItemFormModal({ opened, onClose, stockItem }: Props) {
       made_in_house: false,
       store_type: 'food_store' as 'food_store' | 'bar_store' | 'kitchen',
       reorder_level: 0,
+      pack_size: 0,
+      pack_label: 'packet',
 
       // portion
       portion_name: '',
@@ -259,14 +269,15 @@ export function StockItemFormModal({ opened, onClose, stockItem }: Props) {
     validate: {
       code: (v) => (isEdit || v.trim() ? null : 'Required'),
       name: (v) => (isEdit || v.trim() ? null : 'Required'),
+      // Portion details are only asked for when adding; after that they live in Portion Definitions
       portion_name: (v, values) =>
-        values.dispatch_mode === 'by_portion' && !v.trim() ? 'Required' : null,
+        !isEdit && values.dispatch_mode === 'by_portion' && !v.trim() ? 'Required' : null,
       portion_size: (v, values) =>
-        values.dispatch_mode === 'by_portion' && !(v > 0) ? 'Must be > 0' : null,
+        !isEdit && values.dispatch_mode === 'by_portion' && !(v > 0) ? 'Must be more than 0' : null,
       portion_unit_id: (v, values) =>
-        values.dispatch_mode === 'by_portion' && !v ? 'Required' : null,
+        !isEdit && values.dispatch_mode === 'by_portion' && !v ? 'Required' : null,
       portion_sell_price: (v, values) =>
-        values.dispatch_mode === 'by_portion' && v < 0 ? 'Must be ≥ 0' : null,
+        !isEdit && values.dispatch_mode === 'by_portion' && !(v > 0) ? 'Must be more than 0' : null,
     },
   });
 
@@ -282,6 +293,8 @@ export function StockItemFormModal({ opened, onClose, stockItem }: Props) {
         reorder_level: stockItem.reorder_level
           ? parseFloat(stockItem.reorder_level)
           : 0,
+        pack_size: stockItem.pack_size ?? 0,
+        pack_label: stockItem.pack_label || 'packet',
         portion_name: '',
         portion_size: 0,
         portion_unit_id: '',
@@ -328,6 +341,7 @@ export function StockItemFormModal({ opened, onClose, stockItem }: Props) {
             dispatch_mode: values.dispatch_mode,
             reorder_level: values.reorder_level || null,
             status: values.status,
+            ...packFields(values),
           },
         });
         notifications.show({
@@ -345,6 +359,7 @@ export function StockItemFormModal({ opened, onClose, stockItem }: Props) {
           store_type: values.store_type,
           dispatch_mode: values.dispatch_mode,
           reorder_level: values.reorder_level || null,
+          ...packFields(values),
           portion:
             values.dispatch_mode === 'by_portion'
               ? {
@@ -382,7 +397,11 @@ export function StockItemFormModal({ opened, onClose, stockItem }: Props) {
     <Modal
       opened={opened}
       onClose={onClose}
-      title={isEdit ? 'Edit Stock Item' : 'Add Ingredient to Store'}
+      title={
+        isEdit
+          ? `Edit ${stockItem?.item?.name || 'stock item'}${stockItem?.item?.code ? ` (${stockItem.item.code})` : ''}`
+          : 'Add Ingredient to Store'
+      }
       size="lg"
     >
       <form onSubmit={form.onSubmit(handleSubmit)}>
@@ -432,7 +451,13 @@ export function StockItemFormModal({ opened, onClose, stockItem }: Props) {
             {...form.getInputProps('dispatch_mode')}
           />
 
-          {form.values.dispatch_mode === 'by_portion' && (
+          {isEdit && form.values.dispatch_mode === 'by_portion' && (
+            <Text size="sm" c="dimmed">
+              Portion sizes and prices for this item are set in Menu → Portion Definitions.
+            </Text>
+          )}
+
+          {!isEdit && form.values.dispatch_mode === 'by_portion' && (
             <>
               <Checkbox
                 label="Made in-house (chapati, samosa, cake)"
@@ -479,6 +504,27 @@ export function StockItemFormModal({ opened, onClose, stockItem }: Props) {
             </>
           )}
 
+          {form.values.dispatch_mode === 'by_count' && (
+            <>
+              <Divider label="Packaging (optional)" labelPosition="left" mt="sm" />
+              <Group grow align="flex-start">
+                <NumberInput
+                  label="Pieces per pack"
+                  description="e.g. 30 smokies per packet. Leave 0 if sold loose"
+                  min={0}
+                  allowDecimal={false}
+                  {...form.getInputProps('pack_size')}
+                />
+                <Select
+                  label="Pack is called"
+                  data={['packet', 'crate', 'carton', 'box', 'tray', 'bag']}
+                  disabled={!form.values.pack_size}
+                  {...form.getInputProps('pack_label')}
+                />
+              </Group>
+            </>
+          )}
+
           <Divider label="Store settings" labelPosition="left" mt="sm" />
 
           <Group grow>
@@ -504,7 +550,17 @@ export function StockItemFormModal({ opened, onClose, stockItem }: Props) {
           {isEdit && (
             <Select
               label="Status"
-              data={['active', 'inactive', 'discontinued']}
+              description={
+                form.values.status !== 'active'
+                  ? 'Inactive items cannot be received or issued. The change is recorded in the audit log.'
+                  : undefined
+              }
+              data={[
+                { value: 'active', label: 'Active' },
+                { value: 'inactive', label: 'Inactive (paused)' },
+                { value: 'discontinued', label: 'Discontinued' },
+              ]}
+              allowDeselect={false}
               {...form.getInputProps('status')}
             />
           )}

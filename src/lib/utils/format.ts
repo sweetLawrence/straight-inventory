@@ -37,3 +37,24 @@ export function formatRelative(value: string | Date | null | undefined): string 
   if (!value) return '-';
   return dayjs(value).fromNow();
 }
+/**
+ * Show a piece count as packs + loose pieces, e.g. 140 with 30 per packet →
+ * "4 packets + 20". Stock is always stored in pieces; this is display only.
+ * Returns null when the item isn't packed (or the count isn't a whole number).
+ */
+export function formatPacks(
+  pieces: number | string | null | undefined,
+  packSize: number | null | undefined,
+  packLabel?: string | null
+): string | null {
+  const n = Number(pieces);
+  if (!packSize || packSize <= 0 || !Number.isFinite(n) || n < 0) return null;
+  if (Math.abs(n - Math.round(n)) > 1e-6) return null;
+  const whole = Math.round(n);
+  const packs = Math.floor(whole / packSize);
+  const loose = whole - packs * packSize;
+  const label = packLabel || 'pack';
+  const plural = (k: number) => (k === 1 ? label : `${label}s`);
+  if (packs === 0) return `${loose} loose`;
+  return loose ? `${packs} ${plural(packs)} + ${loose}` : `${packs} ${plural(packs)}`;
+}

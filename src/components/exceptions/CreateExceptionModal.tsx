@@ -13,6 +13,22 @@ import { notifications } from '@mantine/notifications';
 import { useCreateException } from '@/hooks/useAdmin';
 import { getErrorMessage } from '@/lib/api/client';
 
+const EXCEPTION_TYPES = [
+  { value: 'manual_review', label: 'Needs manual review' },
+  { value: 'cash_variance', label: 'Cash short or over' },
+  { value: 'unverified_mpesa', label: 'M-Pesa not verified' },
+  { value: 'unverified_card', label: 'Card payment not verified' },
+  { value: 'disputed_payment', label: 'Disputed payment' },
+  { value: 'unpaid_bill', label: 'Unpaid bill' },
+  { value: 'overdue_drop', label: 'Cash drop overdue' },
+  { value: 'stock_variance', label: 'Stock count difference' },
+  { value: 'negative_stock', label: 'Negative stock' },
+  { value: 'production_variance', label: 'Production variance' },
+  { value: 'transfer_short_receipt', label: 'Transfer received short' },
+  { value: 'transfer_overdue', label: 'Transfer overdue' },
+  { value: 'other', label: 'Other' },
+];
+
 interface Props {
   opened: boolean;
   onClose: () => void;
@@ -66,10 +82,13 @@ export function CreateExceptionModal({ opened, onClose }: Props) {
     <Modal opened={opened} onClose={onClose} title="Create Exception" size="md">
       <form onSubmit={form.onSubmit(handleSubmit)}>
         <Stack>
-          <TextInput
+          <Select
             label="Exception Type"
-            placeholder="e.g. manual_review, unverified_mpesa"
+            placeholder="What kind of problem is it?"
             required
+            searchable
+            data={EXCEPTION_TYPES}
+            allowDeselect={false}
             {...form.getInputProps('exception_type')}
           />
           <Select

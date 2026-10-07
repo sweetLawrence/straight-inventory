@@ -254,22 +254,6 @@
 //   )
 // }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // import { createFileRoute, useNavigate } from '@tanstack/react-router'
 // import {
 //   Box,
@@ -551,38 +535,6 @@
 //   )
 // }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import {
   Box,
@@ -601,7 +553,14 @@ import {
 } from '@mantine/core'
 import { useForm } from '@mantine/form'
 import { notifications } from '@mantine/notifications'
-import { ChefHat, Wine, UtensilsCrossed, Hash, Sparkles, Receipt } from 'lucide-react'
+import {
+  ChefHat,
+  Wine,
+  UtensilsCrossed,
+  Hash,
+  Sparkles,
+  Receipt
+} from 'lucide-react'
 import { useCreateOrder } from '@/hooks/useOrders'
 import { PageHeader } from '@/components/PageHeader'
 import { getErrorMessage } from '@/lib/api/client'
@@ -653,8 +612,13 @@ function NewOrderPage () {
   const handleCancel = () => navigate({ to: '/orders' })
 
   return (
-    <Box w='100%' maw='100%' style={{ overflowX: 'hidden' }} pb={{ base: 96, sm: 0 }}>
-      {/* Header — on desktop the actions live here, always in view */}
+    <Box
+      w='100%'
+      maw='100%'
+      style={{ overflowX: 'hidden' }}
+      pb={{ base: 96, sm: 0 }}
+    >
+      {/* Header - on desktop the actions live here, always in view */}
       <PageHeader
         title='New Order'
         subtitle='Start a new customer order'
@@ -677,7 +641,14 @@ function NewOrderPage () {
       />
 
       {/* Form card */}
-      <Card withBorder radius='md' p={0} maw={520} w='100%' style={{ overflow: 'hidden' }}>
+      <Card
+        withBorder
+        radius='md'
+        p={0}
+        maw={520}
+        w='100%'
+        style={{ overflow: 'hidden' }}
+      >
         <Group gap='sm' p='md' pb='sm' wrap='nowrap'>
           <ThemeIcon variant='light' color='brand' size='lg' radius='md'>
             <Receipt size={18} />
@@ -698,7 +669,14 @@ function NewOrderPage () {
           <Stack gap='md' p='md'>
             {/* Table number */}
             <Box>
-              <Text size='xs' fw={600} c='dimmed' tt='uppercase' mb={6} style={{ letterSpacing: 0.5 }}>
+              <Text
+                size='xs'
+                fw={600}
+                c='dimmed'
+                tt='uppercase'
+                mb={6}
+                style={{ letterSpacing: 0.5 }}
+              >
                 Table number
               </Text>
               <TextInput
@@ -716,7 +694,14 @@ function NewOrderPage () {
 
             {/* Station */}
             <Box>
-              <Text size='xs' fw={600} c='dimmed' tt='uppercase' mb={6} style={{ letterSpacing: 0.5 }}>
+              <Text
+                size='xs'
+                fw={600}
+                c='dimmed'
+                tt='uppercase'
+                mb={6}
+                style={{ letterSpacing: 0.5 }}
+              >
                 Station
               </Text>
               <SegmentedControl
@@ -739,13 +724,18 @@ function NewOrderPage () {
             </Box>
 
             {/* Customer code hint */}
-            <Paper radius='md' p='sm' style={{ background: '#F8F9FA', border: '1px solid #E9ECEF' }}>
+            <Paper
+              radius='md'
+              p='sm'
+              style={{ background: '#F8F9FA', border: '1px solid #E9ECEF' }}
+            >
               <Group gap='sm' wrap='nowrap'>
                 <ThemeIcon variant='light' color='brand' size='md' radius='md'>
                   <Sparkles size={14} />
                 </ThemeIcon>
                 <Text size='xs' c='dimmed' style={{ lineHeight: 1.4 }}>
-                  A <strong>customer code</strong> will be generated automatically when you create this order.
+                  A <strong>customer code</strong> will be generated
+                  automatically when you create this order.
                 </Text>
               </Group>
             </Paper>
@@ -768,11 +758,17 @@ function NewOrderPage () {
             borderTop: '1px solid #E9ECEF',
             background: '#FFFFFF',
             padding: '10px 16px',
-            paddingBottom: 'calc(10px + var(--bottom-nav-safe-area, env(safe-area-inset-bottom)))'
+            paddingBottom:
+              'calc(10px + var(--bottom-nav-safe-area, env(safe-area-inset-bottom)))'
           }}
         >
           <Group gap='sm' grow wrap='nowrap'>
-            <Button variant='default' size='md' radius='md' onClick={handleCancel}>
+            <Button
+              variant='default'
+              size='md'
+              radius='md'
+              onClick={handleCancel}
+            >
               Cancel
             </Button>
             <Button

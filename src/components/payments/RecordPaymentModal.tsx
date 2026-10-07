@@ -54,7 +54,12 @@ export function RecordPaymentModal({
           const idx = parseInt(path.split('.')[1], 10);
           const method = values.lines[idx]?.method;
           if (method === 'cash') return null;
-          return v && v.trim() ? null : 'Required for electronic methods';
+          const ref = (v || '').trim().toUpperCase().replace(/\s+/g, '');
+          if (method === 'mpesa')
+            return /^[A-Z0-9]{10}$/.test(ref) ? null : 'The M-Pesa code is 10 letters/numbers, e.g. QK12AB34CD';
+          if (method === 'card')
+            return /^[A-Z0-9-]{4,30}$/.test(ref) ? null : 'Approval code or last 4 digits of the card';
+          return (v || '').trim().length >= 3 ? null : 'Say how it was paid, e.g. bank transfer ref';
         },
       },
     },
@@ -175,7 +180,7 @@ export function RecordPaymentModal({
                     label="Transaction Reference"
                     placeholder={
                       line.method === 'mpesa'
-                        ? 'M-Pesa code, e.g. QK12XYZ'
+                        ? 'M-Pesa code, e.g. QK12AB34CD'
                         : line.method === 'card'
                         ? 'Last 4 digits or terminal ref'
                         : 'Reference'

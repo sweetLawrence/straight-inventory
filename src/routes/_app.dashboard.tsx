@@ -251,6 +251,7 @@ import {
 } from '@/hooks/useCore';
 import { PageHeader } from '@/components/PageHeader';
 import { formatDate, formatDateTime } from '@/lib/utils/format';
+import { DayShiftPanel } from '@/components/DayShiftPanel';
 
 export const Route = createFileRoute('/_app/dashboard')({
   component: DashboardPage,
@@ -323,6 +324,9 @@ function DashboardPage() {
   const shift = useCurrentShift();
   const properties = useProperties(1, 5);
   const users = useUsers(1, 1);
+  const runsDay = auth.hasPermission('day.manage');
+  const isGroupLevel = auth.hasRole('md', 'admin');
+  const allProperties = useProperties(1, 20);
 
   const propertyLabel =
     auth.user?.roles[0]?.property_code ||
@@ -335,7 +339,18 @@ function DashboardPage() {
         subtitle={`${auth.user?.roles.map((r) => r.code).join(', ')} • ${propertyLabel}`}
       />
 
+      {runsDay && (
+        <SimpleGrid cols={{ base: 1, md: isGroupLevel ? 2 : 1 }} mb="lg" maw={isGroupLevel ? undefined : 640}>
+          {isGroupLevel
+            ? (allProperties.data?.data || []).map((p) => (
+                <DayShiftPanel key={p.id} propertyId={p.id} propertyName={p.name} />
+              ))
+            : <DayShiftPanel />}
+        </SimpleGrid>
+      )}
+
       <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} mb="lg">
+        {!runsDay && (<>
         <StatCard
           icon={<Calendar size={16} />}
           label="Business Day"
@@ -366,6 +381,7 @@ function DashboardPage() {
           }
           color="green"
         />
+        </>)}
         <StatCard
           icon={<Building2 size={16} />}
           label="Properties"

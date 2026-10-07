@@ -74,6 +74,24 @@ const colors: Record<string, string> = {
   both: 'violet',
 };
 
+// Friendly words for codes that read badly as-is
+const LABELS: Record<string, string> = {
+  mpesa: 'M-Pesa',
+  food_store: 'Food store',
+  bar_store: 'Bar store',
+  in_progress: 'In progress',
+  pending_approval: 'Needs approval',
+  partially_verified: 'Part verified',
+  partially_issued: 'Part issued',
+  partially_received: 'Part received',
+  top_up: 'Top-up',
+  written_off: 'Written off',
+  staff_meal: 'Staff meal',
+};
+
+export const statusLabel = (value?: string | null) =>
+  !value ? '-' : LABELS[value] || value.charAt(0).toUpperCase() + value.slice(1).replace(/_/g, ' ');
+
 export function StatBadge({
   value,
   label,
@@ -82,8 +100,13 @@ export function StatBadge({
   label?: string;
 }) {
   return (
-    <Badge color={colors[value] || 'gray'} variant="light">
-      {label || value.replace(/_/g, ' ')}
+    <Badge
+      color={colors[value] || 'gray'}
+      variant="light"
+      // Never cut the word off ("IN PROGR…"): the badge grows to fit
+      styles={{ root: { maxWidth: 'none', flexShrink: 0 }, label: { overflow: 'visible', textOverflow: 'clip' } }}
+    >
+      {label || statusLabel(value)}
     </Badge>
   );
 }
