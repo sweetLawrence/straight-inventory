@@ -1,4 +1,5 @@
-import { Alert, Button, Card, Group, Loader, SimpleGrid, Stack, Table, Text, Title } from '@mantine/core';
+import { Alert, Button, Card, Group, Loader, SegmentedControl, SimpleGrid, Stack, Table, Text, Title } from '@mantine/core';
+import { useState } from 'react';
 import dayjs from 'dayjs';
 import { Info, RotateCw } from 'lucide-react';
 import { useCurrentHandover } from '@/hooks/usePayments';
@@ -25,7 +26,20 @@ export function HandoverView({ title }: { title: string }) {
   const auth = useAuth();
   // A handover belongs to one waiter (or the bar) at one property and shift
   const groupLevel = auth.hasRole('md', 'admin');
-  const query = useCurrentHandover(!groupLevel);
+  const [which, setWhich] = useState<'current' | 'previous'>('current');
+  const query = useCurrentHandover(!groupLevel, which);
+  // Switch between the live shift and the one before it (e.g. last night after the 06:00 roll-over)
+  const shiftPicker = (
+    <SegmentedControl
+      size="xs"
+      value={which}
+      onChange={(v) => setWhich(v as 'current' | 'previous')}
+      data={[
+        { value: 'current', label: 'This shift' },
+        { value: 'previous', label: 'Previous shift' },
+      ]}
+    />
+  );
   if (groupLevel) {
     return (
       <>
@@ -49,6 +63,7 @@ export function HandoverView({ title }: { title: string }) {
   if (query.error || !query.data) {
     return (
       <Stack align="center" py="xl" gap="sm">
+        {shiftPicker}
         <EmptyState title="Handover unavailable" description={getErrorMessage(query.error)} />
         <Button variant="light" leftSection={<RotateCw size={14} />} onClick={() => query.refetch()}>
           Try again
@@ -59,9 +74,18 @@ export function HandoverView({ title }: { title: string }) {
 
   const h = query.data;
   const isBar = h.scope === 'outlet';
+  const live = which === 'current';
   const shiftText = h.shift
-    ? `${h.shift.name} · since ${dayjs(h.shift.opened_at).format('ddd D MMM, HH:mm')}`
+    ? live
+      ? `${h.shift.name} · since ${dayjs(h.shift.opened_at).format('ddd D MMM, HH:mm')}`
+      : `${h.shift.name} · ${dayjs(h.shift.opened_at).format('ddd D MMM, HH:mm')}–${h.shift.closed_at ? dayjs(h.shift.closed_at).format('HH:mm') : 'now'}`
     : 'Current shift';
+  const nothingYet =
+    h.total_bills_count === 0 &&
+    Object.values(h.totals_by_method || {}).every((v) => !Number(v)) &&
+    !h.drops_count &&
+    !Number(h.float_issued) &&
+    !Number(h.float_returned);
 
   return (
     <>
@@ -70,6 +94,7 @@ export function HandoverView({ title }: { title: string }) {
         subtitle={`${shiftText} · ${isBar ? "the whole bar's takings" : 'your bills, payments and cash'}`}
         actions={
           <Group gap="xs">
+            {shiftPicker}
             <Text size="xs" c="dimmed">
               As of {dayjs(h.as_of || undefined).format('HH:mm')}
             </Text>
@@ -85,6 +110,14 @@ export function HandoverView({ title }: { title: string }) {
           </Group>
         }
       />
+
+      {nothingYet && (
+        <Alert color="blue" variant="light" icon={<Info size={16} />} mb="lg">
+          {live
+            ? `Nothing recorded yet in this shift (${h.shift?.name || 'current shift'} started ${dayjs(h.shift?.opened_at).format('HH:mm')}). Figures appear as soon as you bill, take payment or drop cash. Earlier work is under Previous shift.`
+            : 'Nothing was recorded in the previous shift.'}
+        </Alert>
+      )}
 
       <SimpleGrid cols={{ base: 2, lg: 4 }} mb="lg">
         <Card withBorder>

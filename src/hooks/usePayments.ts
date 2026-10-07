@@ -190,12 +190,13 @@ export function useCreateFloat() {
 }
 
 // ─── Handover ───────────────────────────────────────────────────────
-export function useCurrentHandover(enabled = true) {
+export function useCurrentHandover(enabled = true, which: 'current' | 'previous' = 'current') {
   return useQuery({
-    queryKey: ['handover-current'],
-    queryFn: getCurrentHandover,
+    queryKey: ['handover-current', which],
+    queryFn: () => getCurrentHandover(which),
     retry: false,
-    refetchInterval: 30_000,
+    // A finished shift doesn't change; only poll the live one
+    refetchInterval: which === 'current' ? 30_000 : false,
     enabled,
   });
 }
