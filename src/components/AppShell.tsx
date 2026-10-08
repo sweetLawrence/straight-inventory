@@ -478,7 +478,8 @@
 //                             leftSection={item.icon}
 //                             active={active}
 //                             onClick={() => opened && toggle()}
-//                             styles={navLinkStyles(active)}
+//                             className='app-nav-link'
+//                            styles={navLinkStyles(active)}
 //                           />
 //                         )
 //                       }
@@ -499,7 +500,8 @@
 //                           leftSection={item.icon}
 //                           defaultOpened={groupActive}
 //                           active={groupActive}
-//                           styles={navLinkStyles(groupActive)}
+//                           className='app-nav-link'
+//                            styles={navLinkStyles(groupActive)}
 //                           rightSection={
 //                             <ChevronRight
 //                               size={14}
@@ -520,7 +522,8 @@
 //                                 label={child.label}
 //                                 active={active}
 //                                 onClick={() => opened && toggle()}
-//                                 styles={subNavLinkStyles(active)}
+//                                 className='app-nav-link'
+//                                styles={subNavLinkStyles(active)}
 //                               />
 //                             )
 //                           })}
@@ -1188,6 +1191,7 @@ export function AppShell ({ children }: { children?: ReactNode }) {
                             leftSection={item.icon}
                             active={active}
                             onClick={close}
+                            className='app-nav-link'
                             styles={navLinkStyles(active)}
                           />
                         )
@@ -1209,7 +1213,8 @@ export function AppShell ({ children }: { children?: ReactNode }) {
                           leftSection={item.icon}
                           defaultOpened={groupActive}
                           active={groupActive}
-                          styles={navLinkStyles(groupActive)}
+                          className='app-nav-link'
+                            styles={navLinkStyles(groupActive)}
                           rightSection={
                             <ChevronRight
                               size={14}
@@ -1230,6 +1235,7 @@ export function AppShell ({ children }: { children?: ReactNode }) {
                                 label={child.label}
                                 active={active}
                                 onClick={close}
+                                className='app-nav-link'
                                 styles={subNavLinkStyles(active)}
                               />
                             )
@@ -1302,15 +1308,7 @@ function navLinkStyles (active: boolean) {
       color: active ? 'white' : 'rgba(255,255,255,0.72)',
       background: active ? 'rgba(59,130,246,0.18)' : 'transparent',
       fontWeight: active ? 600 : 500,
-      transition: 'background 120ms ease, color 120ms ease',
-      '&:hover': {
-        background: active ? 'rgba(59,130,246,0.22)' : 'rgba(255,255,255,0.06)',
-        color: 'white'
-      },
-      '&[data-active]': {
-        background: 'rgba(59,130,246,0.18)',
-        color: 'white'
-      }
+      transition: 'background 120ms ease, color 120ms ease'
     },
     label: { fontSize: 13.5 },
     section: {
@@ -1327,15 +1325,7 @@ function subNavLinkStyles (active: boolean) {
       color: active ? 'white' : 'rgba(255,255,255,0.6)',
       background: active ? 'rgba(59,130,246,0.15)' : 'transparent',
       fontWeight: active ? 600 : 400,
-      transition: 'background 120ms ease, color 120ms ease',
-      '&:hover': {
-        background: 'rgba(255,255,255,0.06)',
-        color: 'white'
-      },
-      '&[data-active]': {
-        background: 'rgba(59,130,246,0.15)',
-        color: 'white'
-      }
+      transition: 'background 120ms ease, color 120ms ease'
     },
     label: { fontSize: 13 }
   } as const

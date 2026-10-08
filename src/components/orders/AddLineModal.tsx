@@ -6,7 +6,6 @@ import {
   Input,
   Modal,
   NumberInput,
-  Select,
   Stack,
   Textarea,
 } from '@mantine/core';
@@ -15,8 +14,8 @@ import { notifications } from '@mantine/notifications';
 import { useAddOrderLine } from '@/hooks/useOrders';
 import { useMenuItems } from '@/hooks/useCore';
 import { getErrorMessage } from '@/lib/api/client';
-import { formatCurrency } from '@/lib/utils/format';
 import { cookingStyles, menuBaseName } from '@/lib/utils/menuName';
+import { MenuItemPicker } from './MenuItemPicker';
 
 interface Props {
   opened: boolean;
@@ -73,27 +72,19 @@ export function AddLineModal({ opened, onClose, orderId }: Props) {
     }
   };
 
-  const itemOptions =
-    menuItems.data?.data
-      .filter((m) => m.status === 'active')
-      .map((m) => ({
-        value: m.id,
-        label: `${m.display_name} — ${formatCurrency(m.price)}`,
-      })) || [];
+  const activeItems = useMemo(() => (menuItems.data?.data ?? []).filter((m) => m.status === 'active'), [menuItems.data]);
 
   return (
     <Modal opened={opened} onClose={onClose} title="Add Item" size="md">
       <form onSubmit={form.onSubmit(handleSubmit)}>
         <Stack>
-          <Select
-            label="Menu Item"
-            placeholder="Search item"
-            searchable
-            data={itemOptions}
-            required
-            {...form.getInputProps('menu_item_id')}
-            onChange={(v) => {
-              form.setFieldValue('menu_item_id', v || '');
+          <MenuItemPicker
+            items={activeItems}
+            loading={menuItems.isLoading}
+            value={form.values.menu_item_id}
+            error={form.errors.menu_item_id}
+            onChange={(id) => {
+              form.setFieldValue('menu_item_id', id);
               form.setFieldValue('style', '');
             }}
           />

@@ -523,3 +523,12 @@ body {
     font-size: 16px !important;
   }
 }
+
+/* Desktop side menu: hover (inline styles can't express :hover) */
+.app-nav-link:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: #FFFFFF !important;
+}
+.app-nav-link[data-active]:hover {
+  background: rgba(59, 130, 246, 0.22) !important;
+}

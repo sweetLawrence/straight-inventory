@@ -213,6 +213,12 @@ export const theme = createTheme({
     Paper: { defaultProps: { radius: 'lg' } },
     TextInput: { defaultProps: { radius: 'md' } },
     Select: { defaultProps: { radius: 'md' } },
+    // Dropdowns (Select, MultiSelect, Autocomplete, date pickers, menus) sit on Popover.
+    // hideDetached hides the list whenever the field looks off screen; on phones, inside a
+    // bottom-sheet modal with the keyboard up, that check flips every frame and the list
+    // flickers open and closed. Keep the list shown, and keep it on the side it opened on.
+    Popover: { defaultProps: { hideDetached: false, preventPositionChangeWhenVisible: true } },
+    Combobox: { defaultProps: { hideDetached: false, preventPositionChangeWhenVisible: true } },
     Modal: { defaultProps: { radius: 'lg', centered: true } },
     Badge: { defaultProps: { radius: 'sm' } }
   }
